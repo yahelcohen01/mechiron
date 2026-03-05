@@ -121,6 +121,19 @@ export type RfqRequest = {
   created_at: string;
 };
 
+// Composite types for views
+export type RfqListItem = {
+  id: string;
+  status: RfqStatus;
+  base_quantity: number;
+  created_at: string;
+  client_name: string;
+  serial_number: string;
+  revision_number: number;
+  total_requests: number;
+  sent_requests: number;
+};
+
 // Helper functions
 export const formatRevision = (rev: number): string =>
   rev.toString().padStart(2, '0');

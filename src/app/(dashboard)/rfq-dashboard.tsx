@@ -1,0 +1,109 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { DataTable } from '@/components/ui/data-table';
+import { Button } from '@/components/ui/button';
+import { StatusBadge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Select } from '@/components/ui/select';
+import type { RfqListItem, RfqStatus } from '@/lib/types';
+import { formatRevision, formatDate } from '@/lib/utils';
+
+type RfqDashboardProps = {
+  rfqs: RfqListItem[];
+  clients: { id: string; name: string }[];
+};
+
+const statusOptions = [
+  { value: '', label: 'כל הסטטוסים' },
+  { value: 'draft', label: 'טיוטה' },
+  { value: 'in_progress', label: 'בתהליך' },
+  { value: 'completed', label: 'הושלם' },
+];
+
+export function RfqDashboard({ rfqs, clients }: RfqDashboardProps) {
+  const [clientFilter, setClientFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
+  const clientOptions = [
+    { value: '', label: 'כל הלקוחות' },
+    ...clients.map((c) => ({ value: c.id, label: c.name })),
+  ];
+
+  const filtered = rfqs.filter((rfq) => {
+    if (statusFilter && rfq.status !== statusFilter) return false;
+    if (clientFilter) {
+      const client = clients.find((c) => c.id === clientFilter);
+      if (client && rfq.client_name !== client.name) return false;
+    }
+    return true;
+  });
+
+  return (
+    <div>
+      {/* Filters */}
+      <div className="flex items-end gap-4 mb-6">
+        <div className="w-48">
+          <Select
+            options={clientOptions}
+            value={clientFilter}
+            onChange={(e) => setClientFilter(e.target.value)}
+            label="לקוח"
+          />
+        </div>
+        <div className="w-48">
+          <Select
+            options={statusOptions}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as RfqStatus | '')}
+            label="סטטוס"
+          />
+        </div>
+        <div className="flex-1" />
+        <Link href="/rfq/new">
+          <Button>+ בקשה חדשה</Button>
+        </Link>
+      </div>
+
+      {/* Table */}
+      <DataTable
+        headers={['לקוח', 'מק"ט', 'רוויזיה', 'כמות', 'סטטוס', 'תאריך', 'שליחה']}
+        isEmpty={filtered.length === 0}
+        emptyState={
+          <EmptyState
+            title="אין בקשות הצעת מחיר"
+            description="צור בקשה חדשה כדי להתחיל"
+            action={
+              <Link href="/rfq/new">
+                <Button>+ בקשה חדשה</Button>
+              </Link>
+            }
+          />
+        }
+      >
+        {filtered.map((rfq) => (
+          <tr key={rfq.id} className="hover:bg-gray-50">
+            <td className="px-4 py-3 font-medium text-gray-900">
+              <Link href={`/rfq/${rfq.id}`} className="hover:text-blue-600">
+                {rfq.client_name}
+              </Link>
+            </td>
+            <td className="px-4 py-3 text-gray-600" dir="ltr">{rfq.serial_number}</td>
+            <td className="px-4 py-3 text-gray-600">{formatRevision(rfq.revision_number)}</td>
+            <td className="px-4 py-3 text-gray-600">{rfq.base_quantity}</td>
+            <td className="px-4 py-3">
+              <StatusBadge status={rfq.status} />
+            </td>
+            <td className="px-4 py-3 text-gray-600">{formatDate(rfq.created_at)}</td>
+            <td className="px-4 py-3 text-gray-600">
+              {rfq.total_requests > 0
+                ? `${rfq.sent_requests}/${rfq.total_requests} נשלחו`
+                : '—'}
+            </td>
+          </tr>
+        ))}
+      </DataTable>
+    </div>
+  );
+}
