@@ -1,0 +1,42 @@
+import Link from 'next/link';
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex min-h-screen">
+      <main className="flex-1 p-8">{children}</main>
+      <aside className="w-56 bg-white border-s border-gray-200 flex flex-col p-6 shrink-0">
+        <h1 className="text-xl font-bold text-gray-900 mb-8">מחירון</h1>
+        <nav className="flex flex-col gap-2">
+          <Link
+            href="/"
+            className="text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md px-3 py-2 text-sm font-medium transition-colors"
+          >
+            בקשות הצעת מחיר
+          </Link>
+          <Link
+            href="/rfq/new"
+            className="text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md px-3 py-2 text-sm font-medium transition-colors"
+          >
+            בקשה חדשה
+          </Link>
+          <Link
+            href="/settings/clients"
+            className="text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md px-3 py-2 text-sm font-medium transition-colors"
+          >
+            ניהול לקוחות
+          </Link>
+          <Link
+            href="/settings/suppliers"
+            className="text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md px-3 py-2 text-sm font-medium transition-colors"
+          >
+            ניהול ספקים
+          </Link>
+        </nav>
+      </aside>
+    </div>
+  );
+}
