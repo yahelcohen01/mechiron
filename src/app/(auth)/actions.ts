@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { ActionResult } from '@/lib/types/actions';
 
 export async function createAccountAndUser(
@@ -10,7 +10,8 @@ export async function createAccountAndUser(
   email: string
 ): Promise<ActionResult> {
   try {
-    const supabase = await createClient();
+    // Use admin client — the user has no session yet (email not confirmed)
+    const supabase = createAdminClient();
 
     // Create account
     const { data: account, error: accountError } = await supabase

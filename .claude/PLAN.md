@@ -24,7 +24,9 @@
 - [x] Auth layout (`src/app/(auth)/layout.tsx`) — centered card on gray-50, "מחירון" header
 - [x] Server action (`src/app/(auth)/actions.ts`) — `createAccountAndUser` with explicit `users.id = authUserId`
 - [x] Logout button (`src/components/logout-button.tsx`) — added to dashboard sidebar bottom
-- [ ] Test full auth flow: signup → dashboard, login → dashboard, unauthenticated → redirect to login
+- [x] Fix signup: use admin client (service-role) for DB inserts since user has no session before email confirmation
+- [x] Post-signup UX: show success message with email verification instructions instead of redirecting
+- [ ] Test full auth flow: signup → verify email → login → dashboard, unauthenticated → redirect to login
 
 ### Phase 2: New RFQ Form (`src/app/(dashboard)/rfq/new/`) ✅
 - [x] Cascading selects: Client → Part SN → Revision (auto-calculated)

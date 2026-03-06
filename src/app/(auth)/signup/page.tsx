@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Input } from '@/components/ui/input';
@@ -9,13 +8,13 @@ import { Button } from '@/components/ui/button';
 import { createAccountAndUser } from '../actions';
 
 export default function SignupPage() {
-  const router = useRouter();
   const [companyName, setCompanyName] = useState('');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +31,11 @@ export default function SignupPage() {
       });
 
       if (authError) {
-        setError('שגיאה ביצירת חשבון: ' + authError.message);
+        if (authError.code === 'over_email_send_rate_limit') {
+          setError('נשלחו יותר מדי אימיילים. יש להמתין מספר דקות ולנסות שוב.');
+        } else {
+          setError('שגיאה ביצירת חשבון: ' + authError.message);
+        }
         return;
       }
 
@@ -54,13 +57,32 @@ export default function SignupPage() {
         return;
       }
 
-      router.push('/');
+      setEmailSent(true);
     } catch {
       setError('שגיאה לא צפויה, נסה שוב');
     } finally {
       setLoading(false);
     }
   };
+
+  if (emailSent) {
+    return (
+      <div className="flex flex-col gap-4 text-center">
+        <div className="rounded-lg bg-green-50 p-4">
+          <h2 className="text-lg font-semibold text-green-800 mb-2">ההרשמה הצליחה!</h2>
+          <p className="text-sm text-green-700">
+            שלחנו קישור אימות לכתובת <strong dir="ltr">{email}</strong>
+          </p>
+          <p className="text-sm text-green-700 mt-1">
+            יש לאשר את כתובת האימייל כדי להתחבר למערכת.
+          </p>
+        </div>
+        <Link href="/login" className="text-sm text-blue-600 hover:underline">
+          חזרה לדף ההתחברות
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">

@@ -23,3 +23,20 @@ export async function getAccountId(): Promise<string> {
 
   return data.account_id;
 }
+
+export async function getAccountName(): Promise<string> {
+  const supabase = await createClient();
+  const accountId = await getAccountId();
+
+  const { data, error } = await supabase
+    .from('accounts')
+    .select('name')
+    .eq('id', accountId)
+    .single();
+
+  if (error || !data) {
+    throw new Error('Account not found');
+  }
+
+  return data.name;
+}
