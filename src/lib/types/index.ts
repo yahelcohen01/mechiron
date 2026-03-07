@@ -17,6 +17,14 @@ export const DOMAIN_LABELS_HE: Record<RfqDomain, string> = {
   subcontractor: 'קבלן משנה',
 };
 
+export const SPEC_LABELS_HE: Record<RfqDomain, string> = {
+  raw_material: 'חומר',
+  coating: 'סוג ציפוי',
+  passivation: 'סוג פסיבציה',
+  quenching: 'סוג חישול',
+  subcontractor: 'סוג עבודה',
+};
+
 // Table types
 export type Account = {
   id: string;
@@ -104,6 +112,7 @@ export type RfqDomainConfig = {
   quantity_override: number | null;
   email_subject: string | null;
   email_body_text: string | null;
+  spec_value: string | null;
   created_at: string;
   updated_at: string;
 };

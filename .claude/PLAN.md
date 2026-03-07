@@ -35,22 +35,22 @@
 - [x] Base quantity input
 - [x] On submit: create part (if new) + part_revision + rfq record → redirect to `/rfq/[id]`
 
-### Phase 3: RFQ Part Page (`src/app/(dashboard)/rfq/[id]/`)
-- [ ] 5 domain sections (collapsible, each optional)
-- [ ] Per-domain: supplier selection from approved list, quantity override, editable email subject + free-text
-- [ ] Non-approved supplier addition with confirmation modal (one-time, not saved to approvals)
-- [ ] Inline supplier creation (domain auto-set)
-- [ ] Per-domain send button — creates rfq_requests, sends emails via Resend
-- [ ] Lock already-sent suppliers, allow adding more and re-sending
-- [ ] RFQ status transition: draft → in_progress on first send
-- [ ] Manual "mark as completed" button
+### Phase 3: RFQ Part Page (`src/app/(dashboard)/rfq/[id]/`) ✅
+- [x] 5 domain sections (collapsible, each optional)
+- [x] Per-domain: supplier selection from approved list, quantity override, editable email subject + free-text
+- [x] Non-approved supplier addition with confirmation modal (one-time, not saved to approvals)
+- [x] Inline supplier creation (domain auto-set)
+- [x] Per-domain send button — creates rfq_requests, sends emails via Resend
+- [x] Lock already-sent suppliers, allow adding more and re-sending
+- [x] RFQ status transition: draft → in_progress on first send
+- [x] Manual "mark as completed" button
 
-### Phase 4: Email System
-- [ ] Email template: fixed structure with editable free-text section
-- [ ] Drawing attachment in every email
-- [ ] Sender: system domain with manufacturer company name as display name
-- [ ] Ensure client name is NEVER included in email content
-- [ ] Track send status per rfq_request record
+### Phase 4: Email System ✅ (implemented as part of Phase 3)
+- [x] Email template: fixed RTL HTML structure with editable free-text section
+- [x] Drawing attachment in every email
+- [x] Sender: system domain with manufacturer company name as display name
+- [x] Ensure client name is NEVER included in email content
+- [x] Track send status per rfq_request record
 
 ### Phase 5: Polish & Testing
 - [ ] Error states and loading skeletons across all pages
