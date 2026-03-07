@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -73,7 +73,7 @@ export function ClientsTable({ clients }: ClientsTableProps) {
         }
       >
         {clients.map((client) => (
-          <div key={client.id}>
+          <Fragment key={client.id}>
             <tr
               key={client.id}
               className="hover:bg-gray-50 cursor-pointer"
@@ -121,7 +121,7 @@ export function ClientsTable({ clients }: ClientsTableProps) {
                 </td>
               </tr>
             )}
-          </div>
+          </Fragment>
         ))}
       </DataTable>
 
