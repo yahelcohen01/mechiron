@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Heebo } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const heebo = Heebo({
@@ -7,8 +8,15 @@ const heebo = Heebo({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
-  title: "מחירון | ניהול בקשות הצעת מחיר",
+  title: { default: "מחירון", template: "%s | מחירון" },
+  description: "מערכת ניהול בקשות הצעת מחיר",
+  icons: { icon: "/favicon.ico" },
 };
 
 export default function RootLayout({
@@ -20,6 +28,7 @@ export default function RootLayout({
     <html lang="he" dir="rtl">
       <body className={`${heebo.className} antialiased bg-gray-50`}>
         {children}
+        <Toaster position="bottom-left" dir="rtl" richColors />
       </body>
     </html>
   );

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,7 @@ export function ClientForm({ open, onClose, client }: ClientFormProps) {
       return;
     }
 
+    toast.success(isEditing ? 'הלקוח עודכן בהצלחה' : 'הלקוח נוצר בהצלחה');
     onClose();
   }
 

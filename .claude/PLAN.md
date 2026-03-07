@@ -52,10 +52,10 @@
 - [x] Ensure client name is NEVER included in email content
 - [x] Track send status per rfq_request record
 
-### Phase 5: Polish & Testing
-- [ ] Error states and loading skeletons across all pages
-- [ ] Form validation (client-side + server-side)
-- [ ] Responsive design testing (mobile RTL)
-- [ ] Build verification (`npm run build` passes)
-- [ ] Supabase RLS policies (row-level security for account_id isolation)
-- [ ] Environment variable documentation (.env.example)
+### Phase 5: Polish & Testing ✅
+- [x] Error states and loading skeletons across all pages
+- [x] Form validation (client-side + server-side)
+- [x] Responsive design testing (mobile RTL)
+- [x] Build verification (`npm run build` passes)
+- [x] Supabase RLS policies (row-level security for account_id isolation)
+- [x] Environment variable documentation (.env.example)

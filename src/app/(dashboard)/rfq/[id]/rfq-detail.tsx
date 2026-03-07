@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { StatusBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatRevision, RFQ_DOMAINS } from '@/lib/types';
@@ -34,7 +35,7 @@ function DrawingLightbox({ url, filename, isImage, onClose }: { url: string; fil
       <div onClick={(e) => e.stopPropagation()} className="flex flex-col items-center gap-4">
         {isImage ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt={filename} className="max-h-[90vh] max-w-[90vw] object-contain" />
+          <img src={url} alt={filename} className="max-h-[80vh] sm:max-h-[90vh] max-w-[90vw] object-contain" />
         ) : (
           <iframe src={url} className="w-[90vw] h-[90vh] rounded-lg bg-white" />
         )}
@@ -124,9 +125,11 @@ export function RfqDetailView({ data }: RfqDetailViewProps) {
     startTransition(async () => {
       const result = await updateRfqStatus(rfq.id, 'completed');
       if (result.success) {
+        toast.success('הבקשה סומנה כהושלמה');
         router.refresh();
       } else {
         setError(result.error);
+        toast.error('שגיאה בעדכון הסטטוס');
       }
     });
   }
@@ -195,8 +198,6 @@ export function RfqDetailView({ data }: RfqDetailViewProps) {
               rfqId={rfq.id}
               baseQuantity={rfq.base_quantity}
               data={domainData}
-              serialNumber={rfq.serial_number}
-              revisionNumber={rfq.revision_number}
             />
           );
         })}

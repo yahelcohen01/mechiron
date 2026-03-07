@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -42,6 +43,7 @@ export function SupplierForm({ open, onClose, supplier, clients }: SupplierFormP
       return;
     }
 
+    toast.success(isEditing ? 'הספק עודכן בהצלחה' : 'הספק נוצר בהצלחה');
     onClose();
   }
 

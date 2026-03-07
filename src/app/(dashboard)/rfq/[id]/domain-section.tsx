@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -22,11 +23,9 @@ type DomainSectionProps = {
   rfqId: string;
   baseQuantity: number;
   data: DomainSectionData;
-  serialNumber: string;
-  revisionNumber: number;
 };
 
-export function DomainSection({ rfqId, baseQuantity, data, serialNumber, revisionNumber }: DomainSectionProps) {
+export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps) {
   const router = useRouter();
   const { domain, config, approved_suppliers, available_non_approved } = data;
 
@@ -121,8 +120,10 @@ export function DomainSection({ rfqId, baseQuantity, data, serialNumber, revisio
       if (result.success) {
         setConfigSaved(true);
         setTimeout(() => setConfigSaved(false), 2000);
+        toast.success('הגדרות נשמרו');
       } else {
         setError(result.error);
+        toast.error('שגיאה בשמירת הגדרות');
       }
     });
   }
@@ -141,9 +142,14 @@ export function DomainSection({ rfqId, baseQuantity, data, serialNumber, revisio
       const result = await sendDomainEmails(rfqId, domain);
       if (result.success) {
         setSendResult(result.data);
+        toast.success(`נשלחו ${result.data.sent} אימיילים בהצלחה`);
+        if (result.data.failed.length > 0) {
+          toast.error(`שליחה נכשלה ל: ${result.data.failed.join(', ')}`);
+        }
         router.refresh();
       } else {
         setError(result.error);
+        toast.error('שגיאה בשליחת אימיילים');
       }
     });
   }

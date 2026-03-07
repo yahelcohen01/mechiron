@@ -1,6 +1,11 @@
+import type { Metadata } from 'next';
 import { getClients } from '../clients/actions';
 import { getSuppliers } from './actions';
 import { SuppliersTable } from './suppliers-table';
+
+export const metadata: Metadata = {
+  title: 'ספקים',
+};
 
 export default async function SuppliersPage() {
   const [suppliersResult, clientsResult] = await Promise.all([

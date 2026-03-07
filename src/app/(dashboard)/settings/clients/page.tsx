@@ -1,5 +1,10 @@
+import type { Metadata } from 'next';
 import { getClients } from './actions';
 import { ClientsTable } from './clients-table';
+
+export const metadata: Metadata = {
+  title: 'לקוחות',
+};
 
 export default async function ClientsPage() {
   const result = await getClients();

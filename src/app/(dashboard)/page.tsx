@@ -1,6 +1,11 @@
+import type { Metadata } from 'next';
 import { getRfqs, getClientsForFilter } from './actions';
 import { RfqDashboard } from './rfq-dashboard';
 import { getAccountName } from '@/lib/supabase/account';
+
+export const metadata: Metadata = {
+  title: 'לוח בקשות',
+};
 
 export default async function DashboardPage() {
   const [rfqsResult, clientsResult, accountName] = await Promise.all([

@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useState } from "react";
+import { toast } from "sonner";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -46,6 +47,7 @@ export function ClientsTable({ clients }: ClientsTableProps) {
       return;
     }
 
+    toast.success('הלקוח נמחק בהצלחה');
     setDeleteTarget(null);
   }
 

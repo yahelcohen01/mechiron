@@ -1,6 +1,11 @@
+import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { getAccountId } from '@/lib/supabase/account';
 import { NewRfqForm } from './new-rfq-form';
+
+export const metadata: Metadata = {
+  title: 'בקשה חדשה',
+};
 
 export default async function NewRfqPage() {
   const accountId = await getAccountId();

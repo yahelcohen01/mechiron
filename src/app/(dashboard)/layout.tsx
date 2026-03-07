@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { LogoutButton } from '@/components/logout-button';
+import { SidebarToggle } from '@/components/sidebar-toggle';
 
 export default function DashboardLayout({
   children,
@@ -8,8 +9,9 @@ export default function DashboardLayout({
 }) {
   return (
     <div className="flex min-h-screen">
-      <main className="flex-1 p-8">{children}</main>
-      <aside className="w-56 bg-white border-s border-gray-200 flex flex-col p-6 shrink-0">
+      <main className="flex-1 p-4 md:p-8 pt-14 md:pt-8">{children}</main>
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-56 bg-white border-s border-gray-200 flex-col p-6 shrink-0">
         <h1 className="text-xl font-bold text-gray-900 mb-8">מחירון</h1>
         <nav className="flex flex-col gap-2 flex-1">
           <Link
@@ -39,6 +41,8 @@ export default function DashboardLayout({
         </nav>
         <LogoutButton />
       </aside>
+      {/* Mobile sidebar */}
+      <SidebarToggle />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { DataTable } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +53,7 @@ export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
       return;
     }
 
+    toast.success('הספק נמחק בהצלחה');
     setDeleteTarget(null);
   }
 

@@ -1,6 +1,20 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getRfqPageData } from './actions';
 import { RfqDetailView } from './rfq-detail';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const result = await getRfqPageData(id);
+  if (result.success && result.data) {
+    return { title: `מק"ט: ${result.data.rfq.serial_number}` };
+  }
+  return { title: 'בקשת הצעת מחיר' };
+}
 
 export default async function RfqDetailPage({
   params,

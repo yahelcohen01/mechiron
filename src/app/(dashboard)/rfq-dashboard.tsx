@@ -43,8 +43,8 @@ export function RfqDashboard({ rfqs, clients }: RfqDashboardProps) {
   return (
     <div>
       {/* Filters */}
-      <div className="flex items-end gap-4 mb-6">
-        <div className="w-48">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-4 mb-6">
+        <div className="w-full sm:w-48">
           <Select
             options={clientOptions}
             value={clientFilter}
@@ -52,7 +52,7 @@ export function RfqDashboard({ rfqs, clients }: RfqDashboardProps) {
             label="לקוח"
           />
         </div>
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <Select
             options={statusOptions}
             value={statusFilter}
@@ -60,9 +60,9 @@ export function RfqDashboard({ rfqs, clients }: RfqDashboardProps) {
             label="סטטוס"
           />
         </div>
-        <div className="flex-1" />
+        <div className="flex-1 hidden sm:block" />
         <Link href="/rfq/new">
-          <Button>+ בקשה חדשה</Button>
+          <Button className="w-full sm:w-auto">+ בקשה חדשה</Button>
         </Link>
       </div>
 
