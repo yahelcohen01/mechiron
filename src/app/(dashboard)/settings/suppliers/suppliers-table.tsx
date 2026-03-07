@@ -6,15 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Modal } from '@/components/ui/modal';
-import { RFQ_DOMAINS, DOMAIN_LABELS_HE, type Supplier, type RfqDomain } from '@/lib/types';
+import { RFQ_DOMAINS, DOMAIN_LABELS_HE, type Supplier, type Client, type RfqDomain } from '@/lib/types';
 import { deleteSupplier } from './actions';
 import { SupplierForm } from './supplier-form';
 
 type SuppliersTableProps = {
   suppliers: Supplier[];
+  clients: Client[];
 };
 
-export function SuppliersTable({ suppliers }: SuppliersTableProps) {
+export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
   const [domainFilter, setDomainFilter] = useState<RfqDomain | 'all'>('all');
   const [formOpen, setFormOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
@@ -137,6 +138,7 @@ export function SuppliersTable({ suppliers }: SuppliersTableProps) {
         open={formOpen}
         onClose={closeForm}
         supplier={editingSupplier}
+        clients={clients}
       />
 
       {/* Delete confirmation modal */}

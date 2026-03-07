@@ -55,6 +55,17 @@ export async function createSupplier(formData: FormData): Promise<ActionResult<S
       return { success: false, error: error.message };
     }
 
+    // Bulk insert client approvals (non-fatal)
+    const clientIds = formData.getAll('client_ids') as string[];
+    if (clientIds.length > 0) {
+      const approvals = clientIds.map((clientId) => ({
+        client_id: clientId,
+        supplier_id: data.id,
+      }));
+      await supabase.from('client_supplier_approvals').insert(approvals);
+      revalidatePath('/settings/clients');
+    }
+
     revalidatePath('/settings/suppliers');
     return { success: true, data: data as Supplier };
   } catch (e) {
