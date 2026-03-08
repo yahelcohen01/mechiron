@@ -38,6 +38,12 @@ export default function DashboardLayout({
           >
             ניהול ספקים
           </Link>
+          <Link
+            href="/settings/organization"
+            className="text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md px-3 py-2 text-sm font-medium transition-colors"
+          >
+            הגדרות ארגון
+          </Link>
         </nav>
         <LogoutButton />
       </aside>

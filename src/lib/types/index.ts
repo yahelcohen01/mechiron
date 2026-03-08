@@ -130,6 +130,19 @@ export type RfqRequest = {
   created_at: string;
 };
 
+export type InviteStatus = 'pending' | 'accepted' | 'expired';
+
+export type PendingInvite = {
+  id: string;
+  account_id: string;
+  email: string;
+  invited_by: string;
+  token: string;
+  status: InviteStatus;
+  created_at: string;
+  expires_at: string;
+};
+
 // Composite types for views
 export type RfqListItem = {
   id: string;

@@ -64,6 +64,9 @@ export function SidebarToggle() {
               <Link href="/settings/suppliers" onClick={close} className="text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md px-3 py-2 text-sm font-medium transition-colors">
                 ניהול ספקים
               </Link>
+              <Link href="/settings/organization" onClick={close} className="text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md px-3 py-2 text-sm font-medium transition-colors">
+                הגדרות ארגון
+              </Link>
             </nav>
             <LogoutButton />
           </aside>
