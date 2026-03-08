@@ -11,7 +11,7 @@ export default async function OrganizationSettingsPage() {
 
   if (!result.success) {
     return (
-      <div className="rounded-lg bg-red-50 p-4 text-sm text-red-600">
+      <div className="rounded-lg bg-red-50 dark:bg-red-900/30 p-4 text-sm text-red-600 dark:text-red-400">
         שגיאה בטעינת נתונים: {result.error}
       </div>
     );
@@ -21,7 +21,7 @@ export default async function OrganizationSettingsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">הגדרות ארגון</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">הגדרות ארגון</h1>
       <OrganizationSettings
         account={account}
         members={members}

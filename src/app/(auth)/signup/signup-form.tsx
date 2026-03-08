@@ -68,16 +68,16 @@ export function SignupForm() {
   if (emailSent) {
     return (
       <div className="flex flex-col gap-4 text-center">
-        <div className="rounded-lg bg-green-50 p-4">
-          <h2 className="text-lg font-semibold text-green-800 mb-2">ההרשמה הצליחה!</h2>
-          <p className="text-sm text-green-700">
+        <div className="rounded-lg bg-green-50 dark:bg-green-900/30 p-4">
+          <h2 className="text-lg font-semibold text-green-800 dark:text-green-300 mb-2">ההרשמה הצליחה!</h2>
+          <p className="text-sm text-green-700 dark:text-green-400">
             שלחנו קישור אימות לכתובת <strong dir="ltr">{email}</strong>
           </p>
-          <p className="text-sm text-green-700 mt-1">
+          <p className="text-sm text-green-700 dark:text-green-400 mt-1">
             יש לאשר את כתובת האימייל כדי להתחבר למערכת.
           </p>
         </div>
-        <Link href="/login" className="text-sm text-blue-600 hover:underline">
+        <Link href="/login" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
           חזרה לדף ההתחברות
         </Link>
       </div>
@@ -86,10 +86,10 @@ export function SignupForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <h2 className="text-xl font-semibold text-gray-900">הרשמה</h2>
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">הרשמה</h2>
 
       {error && (
-        <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>
+        <p className="rounded-lg bg-red-50 dark:bg-red-900/30 p-3 text-sm text-red-600 dark:text-red-400">{error}</p>
       )}
 
       <Input
@@ -133,9 +133,9 @@ export function SignupForm() {
         {loading ? 'נרשם...' : 'הרשמה'}
       </Button>
 
-      <p className="text-center text-sm text-gray-600">
+      <p className="text-center text-sm text-gray-600 dark:text-gray-400">
         יש לך חשבון?{' '}
-        <Link href="/login" className="text-blue-600 hover:underline">
+        <Link href="/login" className="text-blue-600 dark:text-blue-400 hover:underline">
           התחבר
         </Link>
       </p>

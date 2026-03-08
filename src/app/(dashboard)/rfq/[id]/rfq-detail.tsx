@@ -59,8 +59,8 @@ function DrawingPreview({ rfq }: { rfq: RfqPageData['rfq'] }) {
 
   if (!rfq.drawing_signed_url || !rfq.drawing_filename) {
     return (
-      <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
-        <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+        <svg className="w-8 h-8 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
         <p className="text-sm text-gray-400">לא הועלה שרטוט</p>
@@ -72,7 +72,7 @@ function DrawingPreview({ rfq }: { rfq: RfqPageData['rfq'] }) {
 
   return (
     <>
-      <div className="flex flex-col gap-2 p-4 bg-gray-50 rounded-xl border border-gray-200">
+      <div className="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
         <div onClick={() => setShowLightbox(true)} className="cursor-zoom-in">
           {isImage ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -84,16 +84,16 @@ function DrawingPreview({ rfq }: { rfq: RfqPageData['rfq'] }) {
           ) : (
             <iframe
               src={rfq.drawing_signed_url}
-              className="w-full h-96 rounded-lg border border-gray-200 pointer-events-none"
+              className="w-full h-96 rounded-lg border border-gray-200 dark:border-gray-700 pointer-events-none"
             />
           )}
         </div>
         <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-gray-900">{rfq.drawing_filename}</p>
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{rfq.drawing_filename}</p>
           <a
             href={rfq.drawing_signed_url}
             download={rfq.drawing_filename}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-800"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -140,7 +140,7 @@ export function RfqDetailView({ data }: RfqDetailViewProps) {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
               מק&quot;ט: {rfq.serial_number}
             </h1>
             <StatusBadge status={rfq.status} />
@@ -158,18 +158,18 @@ export function RfqDetailView({ data }: RfqDetailViewProps) {
         </div>
 
         {/* Info grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-xl">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
           <div>
-            <p className="text-xs text-gray-500">לקוח</p>
-            <p className="text-sm font-medium text-gray-900">{rfq.client_name}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">לקוח</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{rfq.client_name}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">רוויזיה</p>
-            <p className="text-sm font-medium text-gray-900">{formatRevision(rfq.revision_number)}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">רוויזיה</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{formatRevision(rfq.revision_number)}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">כמות בסיס</p>
-            <p className="text-sm font-medium text-gray-900">{rfq.base_quantity}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">כמות בסיס</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{rfq.base_quantity}</p>
           </div>
         </div>
 
@@ -178,18 +178,18 @@ export function RfqDetailView({ data }: RfqDetailViewProps) {
 
         {/* Notes */}
         {rfq.notes && (
-          <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-            <p className="text-xs text-yellow-700 font-medium mb-1">הערות</p>
-            <p className="text-sm text-yellow-900 whitespace-pre-wrap">{rfq.notes}</p>
+          <div className="p-3 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg border border-yellow-200 dark:border-yellow-800">
+            <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium mb-1">הערות</p>
+            <p className="text-sm text-yellow-900 dark:text-yellow-200 whitespace-pre-wrap">{rfq.notes}</p>
           </div>
         )}
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
       </div>
 
       {/* Domain sections */}
       <div className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold text-gray-900">תחומים</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">תחומים</h2>
         {RFQ_DOMAINS.map((domain) => {
           const domainData = domains.find((d) => d.domain === domain)!;
           return (

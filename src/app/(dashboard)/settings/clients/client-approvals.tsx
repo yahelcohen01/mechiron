@@ -77,7 +77,7 @@ export function ClientApprovals({ clientId }: ClientApprovalsProps) {
   }
 
   if (loading) {
-    return <p className="text-sm text-gray-500 py-4">טוען...</p>;
+    return <p className="text-sm text-gray-500 dark:text-gray-400 py-4">טוען...</p>;
   }
 
   // Group approvals by domain
@@ -93,10 +93,10 @@ export function ClientApprovals({ clientId }: ClientApprovalsProps) {
   }));
 
   return (
-    <div className="border-t border-gray-100 pt-4 mt-2">
-      <h4 className="text-sm font-medium text-gray-700 mb-3">ספקים מאושרים</h4>
+    <div className="border-t border-gray-100 dark:border-gray-800 pt-4 mt-2">
+      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">ספקים מאושרים</h4>
 
-      {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400 mb-2">{error}</p>}
 
       {Object.keys(grouped).length === 0 && (
         <p className="text-sm text-gray-400 mb-3">אין ספקים מאושרים עדיין</p>
@@ -104,19 +104,19 @@ export function ClientApprovals({ clientId }: ClientApprovalsProps) {
 
       {Object.entries(grouped).map(([domain, suppliers]) => (
         <div key={domain} className="mb-3">
-          <p className="text-xs text-gray-500 mb-1">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
             {DOMAIN_LABELS_HE[domain as RfqDomain]}
           </p>
           <div className="flex flex-wrap gap-2">
             {suppliers.map((s) => (
               <span
                 key={s.id}
-                className="inline-flex items-center gap-1 bg-gray-100 rounded-full ps-3 pe-1 py-1 text-sm"
+                className="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-200 rounded-full ps-3 pe-1 py-1 text-sm"
               >
                 {s.name}
                 <button
                   onClick={() => handleRemove(s.id)}
-                  className="text-gray-400 hover:text-red-500 p-0.5"
+                  className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 p-0.5"
                   title="הסר אישור"
                 >
                   ×

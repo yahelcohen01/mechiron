@@ -41,10 +41,10 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <h2 className="text-xl font-semibold text-gray-900">כניסה למערכת</h2>
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">כניסה למערכת</h2>
 
       {error && (
-        <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>
+        <p className="rounded-lg bg-red-50 dark:bg-red-900/30 p-3 text-sm text-red-600 dark:text-red-400">{error}</p>
       )}
 
       <Input
@@ -71,9 +71,9 @@ export function LoginForm() {
         {loading ? 'מתחבר...' : 'כניסה'}
       </Button>
 
-      <p className="text-center text-sm text-gray-600">
+      <p className="text-center text-sm text-gray-600 dark:text-gray-400">
         אין לך חשבון?{' '}
-        <Link href="/signup" className="text-blue-600 hover:underline">
+        <Link href="/signup" className="text-blue-600 dark:text-blue-400 hover:underline">
           הירשם
         </Link>
       </p>

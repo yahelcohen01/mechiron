@@ -173,7 +173,7 @@ export function NewRfqForm({ clients: initialClients }: NewRfqFormProps) {
       <form onSubmit={handleSubmit} className="flex flex-col gap-5 max-w-lg">
         {/* Client select + new client button */}
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700">שם לקוח</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">שם לקוח</label>
           <div className="flex gap-2">
             <div className="flex-1">
               <Select
@@ -199,7 +199,7 @@ export function NewRfqForm({ clients: initialClients }: NewRfqFormProps) {
         {clientId && (
           <div className="flex flex-col gap-1">
             {partsLoading ? (
-              <p className="text-sm text-gray-500">טוען חלקים...</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">טוען חלקים...</p>
             ) : (
               <Select
                 label='מק"ט'
@@ -233,8 +233,8 @@ export function NewRfqForm({ clients: initialClients }: NewRfqFormProps) {
         {/* Revision display */}
         {revision !== null && (
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">רוויזיה</label>
-            <div className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">רוויזיה</label>
+            <div className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
               {formatRevision(revision)}
             </div>
           </div>
@@ -254,15 +254,15 @@ export function NewRfqForm({ clients: initialClients }: NewRfqFormProps) {
 
             {/* Drawing upload */}
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-gray-700">שרטוט</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">שרטוט</label>
               <input
                 type="file"
                 name="drawing"
                 accept=".pdf,.png,.jpeg,.jpg"
                 onChange={handleFileChange}
-                className="text-sm text-gray-700 file:me-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
+                className="text-sm text-gray-700 dark:text-gray-300 file:me-3 file:rounded-lg file:border-0 file:bg-blue-50 dark:file:bg-blue-900/50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/70"
               />
-              {fileError && <p className="text-sm text-red-600">{fileError}</p>}
+              {fileError && <p className="text-sm text-red-600 dark:text-red-400">{fileError}</p>}
             </div>
 
             {/* Notes */}
@@ -274,7 +274,7 @@ export function NewRfqForm({ clients: initialClients }: NewRfqFormProps) {
           </>
         )}
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
         {clientId && selectedPartValue && (
           <Button type="submit" disabled={isPending}>
@@ -299,7 +299,7 @@ export function NewRfqForm({ clients: initialClients }: NewRfqFormProps) {
             required
             placeholder="הזן שם לקוח"
           />
-          {newClientError && <p className="text-sm text-red-600">{newClientError}</p>}
+          {newClientError && <p className="text-sm text-red-600 dark:text-red-400">{newClientError}</p>}
           <div className="flex gap-3 justify-end mt-2">
             <Button
               type="button"

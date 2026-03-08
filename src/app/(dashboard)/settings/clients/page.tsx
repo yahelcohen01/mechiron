@@ -12,9 +12,9 @@ export default async function ClientsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">ניהול לקוחות</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">ניהול לקוחות</h1>
       {!result.success && (
-        <p className="text-sm text-red-600 mb-4">{result.error}</p>
+        <p className="text-sm text-red-600 dark:text-red-400 mb-4">{result.error}</p>
       )}
       <ClientsTable clients={clients} />
     </div>

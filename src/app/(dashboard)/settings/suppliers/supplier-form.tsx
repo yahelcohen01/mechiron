@@ -90,19 +90,19 @@ export function SupplierForm({ open, onClose, supplier, clients }: SupplierFormP
         />
         {!isEditing && clients.length > 0 && (
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-gray-700">שייך ללקוחות</label>
-            <p className="text-xs text-gray-500">אופציונלי — הספק יתווסף כספק מאושר עבור הלקוחות שנבחרו</p>
-            <div className="max-h-40 overflow-auto border border-gray-200 rounded-lg p-2 flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">שייך ללקוחות</label>
+            <p className="text-xs text-gray-500 dark:text-gray-400">אופציונלי — הספק יתווסף כספק מאושר עבור הלקוחות שנבחרו</p>
+            <div className="max-h-40 overflow-auto border border-gray-200 dark:border-gray-700 rounded-lg p-2 flex flex-col gap-1">
               {clients.map((client) => (
-                <label key={client.id} className="flex items-center gap-2 text-sm text-gray-700 py-1 px-1 rounded hover:bg-gray-50 cursor-pointer">
-                  <input type="checkbox" name="client_ids" value={client.id} className="rounded border-gray-300" />
+                <label key={client.id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 py-1 px-1 rounded hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                  <input type="checkbox" name="client_ids" value={client.id} className="rounded border-gray-300 dark:border-gray-600" />
                   {client.name}
                 </label>
               ))}
             </div>
           </div>
         )}
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <div className="flex gap-3 justify-end mt-2">
           <Button type="button" variant="secondary" onClick={onClose}>
             ביטול

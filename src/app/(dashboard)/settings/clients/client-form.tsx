@@ -72,7 +72,7 @@ export function ClientForm({ open, onClose, client }: ClientFormProps) {
           placeholder="050-0000000"
           dir="ltr"
         />
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <div className="flex gap-3 justify-end mt-2">
           <Button type="button" variant="secondary" onClick={onClose}>
             ביטול

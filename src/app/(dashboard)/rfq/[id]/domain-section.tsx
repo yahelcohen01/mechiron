@@ -178,30 +178,30 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
   }
 
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden">
+    <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
       {/* Header — always visible */}
       <button
         type="button"
-        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-gray-900">
+          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             {DOMAIN_LABELS_HE[domain]}
           </span>
           {specValue && (
-            <span className="text-xs text-gray-600 bg-white px-2 py-0.5 rounded border border-gray-200">
+            <span className="text-xs text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 px-2 py-0.5 rounded border border-gray-200 dark:border-gray-600">
               {specValue}
             </span>
           )}
           {totalAdded > 0 && (
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
               {sentCount}/{totalAdded} נשלחו
             </span>
           )}
         </div>
         <svg
-          className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -214,8 +214,8 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
       {isOpen && (
         <div className="p-4 flex flex-col gap-5">
           {/* Config fields */}
-          <div className="flex flex-col gap-4 p-4 bg-gray-50 rounded-lg">
-            <h4 className="text-sm font-medium text-gray-700">הגדרות תחום</h4>
+          <div className="flex flex-col gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">הגדרות תחום</h4>
 
             {/* Spec value with autocomplete */}
             <div className="relative">
@@ -230,13 +230,13 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
               {showSuggestions && suggestions.length > 0 && (
                 <div
                   ref={suggestionsRef}
-                  className="absolute z-10 top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-auto"
+                  className="absolute z-10 top-full mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-auto"
                 >
                   {suggestions.map((s) => (
                     <button
                       key={s}
                       type="button"
-                      className="w-full text-start px-3 py-2 text-sm text-gray-900 hover:bg-gray-100"
+                      className="w-full text-start px-3 py-2 text-sm text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
                       onClick={() => handleSelectSuggestion(s)}
                     >
                       {s}
@@ -266,7 +266,7 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
                 onChange={(e) => setEmailBodyText(e.target.value)}
                 rows={6}
               />
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                 {'תגיות זמינות: {כמות}, {תחום}, {ערך}, {מקט}, {רוויזיה}'}
               </p>
             </div>
@@ -280,17 +280,17 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
               >
                 {isSaving ? 'שומר...' : 'שמור הגדרות'}
               </Button>
-              {configSaved && <span className="text-sm text-green-600">נשמר</span>}
+              {configSaved && <span className="text-sm text-green-600 dark:text-green-400">נשמר</span>}
             </div>
           </div>
 
           {/* Supplier list */}
           <div className="flex flex-col gap-2">
-            <h4 className="text-sm font-medium text-gray-700">ספקים</h4>
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">ספקים</h4>
             {approved_suppliers.length === 0 ? (
-              <p className="text-sm text-gray-500 py-2">אין ספקים בתחום זה</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 py-2">אין ספקים בתחום זה</p>
             ) : (
-              <div className="flex flex-col divide-y divide-gray-100">
+              <div className="flex flex-col divide-y divide-gray-100 dark:divide-gray-800">
                 {approved_suppliers.map((item) => (
                   <SupplierRow
                     key={item.supplier.id}
@@ -320,9 +320,9 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
 
           {/* Send button */}
           {pendingCount > 0 && (
-            <div className="flex flex-col gap-2 pt-3 border-t border-gray-200">
+            <div className="flex flex-col gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
               {!specValue.trim() && (
-                <p className="text-xs text-amber-600">
+                <p className="text-xs text-amber-600 dark:text-amber-400">
                   יש למלא את שדה &quot;{SPEC_LABELS_HE[domain]}&quot; לפני שליחה
                 </p>
               )}
@@ -341,15 +341,15 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
           {/* Results / Errors */}
           {sendResult && (
             <div className="text-sm">
-              <p className="text-green-600">נשלחו {sendResult.sent} אימיילים בהצלחה</p>
+              <p className="text-green-600 dark:text-green-400">נשלחו {sendResult.sent} אימיילים בהצלחה</p>
               {sendResult.failed.length > 0 && (
-                <p className="text-red-600">
+                <p className="text-red-600 dark:text-red-400">
                   שליחה נכשלה ל: {sendResult.failed.join(', ')}
                 </p>
               )}
             </div>
           )}
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         </div>
       )}
 

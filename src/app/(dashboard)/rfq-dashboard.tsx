@@ -86,20 +86,20 @@ export function RfqDashboard({ rfqs, clients }: RfqDashboardProps) {
             headers={['לקוח', 'מק"ט', 'רוויזיה', 'כמות', 'סטטוס', 'תאריך', 'שליחה']}
           >
             {filtered.map((rfq) => (
-              <tr key={rfq.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-900">
-                  <Link href={`/rfq/${rfq.id}`} className="hover:text-blue-600">
+              <tr key={rfq.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
+                  <Link href={`/rfq/${rfq.id}`} className="hover:text-blue-600 dark:hover:text-blue-400">
                     {rfq.client_name}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-gray-600" dir="ltr">{rfq.serial_number}</td>
-                <td className="px-4 py-3 text-gray-600">{formatRevision(rfq.revision_number)}</td>
-                <td className="px-4 py-3 text-gray-600">{rfq.base_quantity}</td>
+                <td className="px-4 py-3 text-gray-600 dark:text-gray-400" dir="ltr">{rfq.serial_number}</td>
+                <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatRevision(rfq.revision_number)}</td>
+                <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{rfq.base_quantity}</td>
                 <td className="px-4 py-3">
                   <StatusBadge status={rfq.status} />
                 </td>
-                <td className="px-4 py-3 text-gray-600">{formatDate(rfq.created_at)}</td>
-                <td className="px-4 py-3 text-gray-600">
+                <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatDate(rfq.created_at)}</td>
+                <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
                   {rfq.total_requests > 0
                     ? `${rfq.sent_requests}/${rfq.total_requests} נשלחו`
                     : '—'}
@@ -117,18 +117,18 @@ export function RfqDashboard({ rfqs, clients }: RfqDashboardProps) {
             <Link
               key={rfq.id}
               href={`/rfq/${rfq.id}`}
-              className="block bg-white border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-colors"
+              className="block bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="font-medium text-gray-900">{rfq.client_name}</span>
+                <span className="font-medium text-gray-900 dark:text-gray-100">{rfq.client_name}</span>
                 <StatusBadge status={rfq.status} />
               </div>
-              <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+              <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-2">
                 <span dir="ltr">מק&quot;ט: {rfq.serial_number}</span>
                 <span>רוו׳ {formatRevision(rfq.revision_number)}</span>
                 <span>כמות: {rfq.base_quantity}</span>
               </div>
-              <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                 <span>{formatDate(rfq.created_at)}</span>
                 <span>
                   {rfq.total_requests > 0

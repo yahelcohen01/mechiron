@@ -1,9 +1,9 @@
 import type { RfqStatus } from '@/lib/types';
 
 const variants = {
-  gray: 'bg-gray-100 text-gray-700',
-  blue: 'bg-blue-100 text-blue-700',
-  green: 'bg-green-100 text-green-700',
+  gray: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+  blue: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
+  green: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300',
 } as const;
 
 type BadgeProps = {

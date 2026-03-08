@@ -44,7 +44,7 @@ export function InviteModal({ open, onClose }: InviteModalProps) {
     <Modal open={open} onClose={onClose} title="הזמן חבר צוות">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {error && (
-          <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>
+          <p className="rounded-lg bg-red-50 dark:bg-red-900/30 p-3 text-sm text-red-600 dark:text-red-400">{error}</p>
         )}
 
         <Input

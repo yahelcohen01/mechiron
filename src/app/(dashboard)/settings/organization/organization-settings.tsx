@@ -54,13 +54,13 @@ export function OrganizationSettings({
     <div className="flex flex-col gap-8 max-w-3xl">
       {/* Organization details */}
       <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">פרטי ארגון</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">פרטי ארגון</h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {error && (
-            <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>
+            <p className="rounded-lg bg-red-50 dark:bg-red-900/30 p-3 text-sm text-red-600 dark:text-red-400">{error}</p>
           )}
           {success && (
-            <p className="rounded-lg bg-green-50 p-3 text-sm text-green-600">{success}</p>
+            <p className="rounded-lg bg-green-50 dark:bg-green-900/30 p-3 text-sm text-green-600 dark:text-green-400">{success}</p>
           )}
 
           <Input
@@ -87,7 +87,7 @@ export function OrganizationSettings({
         </form>
       </section>
 
-      <hr className="border-gray-200" />
+      <hr className="border-gray-200 dark:border-gray-700" />
 
       {/* Members section */}
       <MembersTable members={members} pendingInvites={pendingInvites} />

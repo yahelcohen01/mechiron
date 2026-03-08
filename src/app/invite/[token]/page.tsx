@@ -17,14 +17,14 @@ export default async function InvitePage({
 
   if (!result.success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4" dir="rtl">
-        <div className="w-full max-w-md bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-4" dir="rtl">
+        <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex flex-col gap-4 text-center">
-            <div className="rounded-lg bg-red-50 p-4">
-              <h2 className="text-lg font-semibold text-red-800 mb-2">הזמנה לא תקינה</h2>
-              <p className="text-sm text-red-700">{result.error}</p>
+            <div className="rounded-lg bg-red-50 dark:bg-red-900/30 p-4">
+              <h2 className="text-lg font-semibold text-red-800 dark:text-red-300 mb-2">הזמנה לא תקינה</h2>
+              <p className="text-sm text-red-700 dark:text-red-400">{result.error}</p>
             </div>
-            <Link href="/login" className="text-sm text-blue-600 hover:underline">
+            <Link href="/login" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
               חזרה לדף ההתחברות
             </Link>
           </div>
@@ -36,8 +36,8 @@ export default async function InvitePage({
   const { email, accountName } = result.data;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4" dir="rtl">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-4" dir="rtl">
+      <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <AcceptInviteForm token={token} email={email} accountName={accountName} />
       </div>
     </div>

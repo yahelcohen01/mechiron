@@ -77,16 +77,16 @@ export function ClientsTable({ clients }: ClientsTableProps) {
               {clients.map((client) => (
                 <Fragment key={client.id}>
                   <tr
-                    className="hover:bg-gray-50 cursor-pointer"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
                     onClick={() => toggleExpand(client.id)}
                   >
-                    <td className="px-4 py-3 font-medium text-gray-900">
-                      <span className="me-2 text-gray-400">
+                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
+                      <span className="me-2 text-gray-400 dark:text-gray-500">
                         {expandedId === client.id ? "▾" : "▸"}
                       </span>
                       {client.name}
                     </td>
-                    <td className="px-4 py-3 text-gray-600">
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
                       {client.contact_name ?? "—"}
                     </td>
                     <td className="px-4 py-3 text-gray-600" dir="ltr">
@@ -102,13 +102,13 @@ export function ClientsTable({ clients }: ClientsTableProps) {
                       >
                         <button
                           onClick={() => openEdit(client)}
-                          className="text-sm text-blue-600 hover:text-blue-800 py-1 px-1"
+                          className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 py-1 px-1"
                         >
                           עריכה
                         </button>
                         <button
                           onClick={() => setDeleteTarget(client)}
-                          className="text-sm text-red-600 hover:text-red-800 py-1 px-1"
+                          className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 py-1 px-1"
                         >
                           מחיקה
                         </button>
@@ -117,7 +117,7 @@ export function ClientsTable({ clients }: ClientsTableProps) {
                   </tr>
                   {expandedId === client.id && (
                     <tr key={`${client.id}-approvals`}>
-                      <td colSpan={5} className="px-8 py-4 bg-gray-50/50">
+                      <td colSpan={5} className="px-8 py-4 bg-gray-50/50 dark:bg-gray-800/50">
                         <ClientApprovals clientId={client.id} />
                       </td>
                     </tr>
@@ -130,17 +130,17 @@ export function ClientsTable({ clients }: ClientsTableProps) {
           {/* Mobile cards */}
           <div className="md:hidden flex flex-col gap-3">
             {clients.map((client) => (
-              <div key={client.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div key={client.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
                 <div
                   className="p-4 cursor-pointer"
                   onClick={() => toggleExpand(client.id)}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-400">
+                      <span className="text-gray-400 dark:text-gray-500">
                         {expandedId === client.id ? "▾" : "▸"}
                       </span>
-                      <span className="font-medium text-gray-900">{client.name}</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{client.name}</span>
                     </div>
                     <div
                       className="flex gap-2"
@@ -148,26 +148,26 @@ export function ClientsTable({ clients }: ClientsTableProps) {
                     >
                       <button
                         onClick={() => openEdit(client)}
-                        className="text-sm text-blue-600 hover:text-blue-800 py-1 px-1"
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 py-1 px-1"
                       >
                         עריכה
                       </button>
                       <button
                         onClick={() => setDeleteTarget(client)}
-                        className="text-sm text-red-600 hover:text-red-800 py-1 px-1"
+                        className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 py-1 px-1"
                       >
                         מחיקה
                       </button>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-1 text-sm text-gray-600">
+                  <div className="flex flex-col gap-1 text-sm text-gray-600 dark:text-gray-400">
                     {client.contact_name && <span>{client.contact_name}</span>}
                     {client.contact_email && <span dir="ltr" className="text-start">{client.contact_email}</span>}
                     {client.contact_phone && <span dir="ltr" className="text-start">{client.contact_phone}</span>}
                   </div>
                 </div>
                 {expandedId === client.id && (
-                  <div className="px-4 py-3 bg-gray-50/50 border-t border-gray-100">
+                  <div className="px-4 py-3 bg-gray-50/50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800">
                     <ClientApprovals clientId={client.id} />
                   </div>
                 )}
@@ -187,11 +187,11 @@ export function ClientsTable({ clients }: ClientsTableProps) {
         }}
         title="מחיקת לקוח"
       >
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
           האם למחוק את הלקוח <strong>{deleteTarget?.name}</strong>?
         </p>
         {deleteError && (
-          <p className="text-sm text-red-600 mb-4">{deleteError}</p>
+          <p className="text-sm text-red-600 dark:text-red-400 mb-4">{deleteError}</p>
         )}
         <div className="flex gap-3 justify-end">
           <Button

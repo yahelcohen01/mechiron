@@ -14,7 +14,7 @@ export default function OrganizationSettingsLoading() {
         <Skeleton className="h-10 w-32" />
       </div>
 
-      <hr className="border-gray-200" />
+      <hr className="border-gray-200 dark:border-gray-700" />
 
       <div className="flex flex-col gap-4">
         <Skeleton className="h-6 w-32" />

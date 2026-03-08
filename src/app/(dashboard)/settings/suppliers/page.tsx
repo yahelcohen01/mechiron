@@ -17,9 +17,9 @@ export default async function SuppliersPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">ניהול ספקים</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">ניהול ספקים</h1>
       {!suppliersResult.success && (
-        <p className="text-sm text-red-600 mb-4">{suppliersResult.error}</p>
+        <p className="text-sm text-red-600 dark:text-red-400 mb-4">{suppliersResult.error}</p>
       )}
       <SuppliersTable suppliers={suppliers} clients={clients} />
     </div>

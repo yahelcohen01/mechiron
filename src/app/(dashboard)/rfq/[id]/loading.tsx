@@ -9,7 +9,7 @@ export default function RfqDetailLoading() {
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-6 w-16 rounded-full" />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-xl">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i}>
               <Skeleton className="h-3 w-12 mb-1" />

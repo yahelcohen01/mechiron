@@ -20,11 +20,11 @@ export default async function DashboardPage() {
   return (
     <div>
       {accountName && (
-        <p className="text-sm text-gray-500 mb-1">{accountName}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{accountName}</p>
       )}
-      <h1 className="text-2xl font-bold mb-6">בקשות הצעת מחיר</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">בקשות הצעת מחיר</h1>
       {!rfqsResult.success && (
-        <p className="text-sm text-red-600 mb-4">{rfqsResult.error}</p>
+        <p className="text-sm text-red-600 dark:text-red-400 mb-4">{rfqsResult.error}</p>
       )}
       <RfqDashboard rfqs={rfqs} clients={clients} />
     </div>

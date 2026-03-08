@@ -65,8 +65,8 @@ export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
           onClick={() => setDomainFilter('all')}
           className={`px-3 py-1.5 text-sm rounded-lg transition-colors shrink-0 ${
             domainFilter === 'all'
-              ? 'bg-blue-100 text-blue-700 font-medium'
-              : 'text-gray-600 hover:bg-gray-100'
+              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-medium'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
           }`}
         >
           הכל ({suppliers.length})
@@ -79,8 +79,8 @@ export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
               onClick={() => setDomainFilter(domain)}
               className={`px-3 py-1.5 text-sm rounded-lg transition-colors shrink-0 ${
                 domainFilter === domain
-                  ? 'bg-blue-100 text-blue-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-medium'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
             >
               {DOMAIN_LABELS_HE[domain]} ({count})
@@ -107,25 +107,25 @@ export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
           <div className="hidden md:block">
             <DataTable headers={['שם', 'תחום', 'איש קשר', 'אימייל', 'טלפון', 'פעולות']}>
               {filtered.map((supplier) => (
-                <tr key={supplier.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{supplier.name}</td>
+                <tr key={supplier.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{supplier.name}</td>
                   <td className="px-4 py-3">
                     <Badge>{DOMAIN_LABELS_HE[supplier.domain]}</Badge>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{supplier.contact_name ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{supplier.contact_name ?? '—'}</td>
                   <td className="px-4 py-3 text-gray-600" dir="ltr">{supplier.email}</td>
                   <td className="px-4 py-3 text-gray-600" dir="ltr">{supplier.phone ?? '—'}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
                       <button
                         onClick={() => openEdit(supplier)}
-                        className="text-sm text-blue-600 hover:text-blue-800 py-1 px-1"
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 py-1 px-1"
                       >
                         עריכה
                       </button>
                       <button
                         onClick={() => setDeleteTarget(supplier)}
-                        className="text-sm text-red-600 hover:text-red-800 py-1 px-1"
+                        className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 py-1 px-1"
                       >
                         מחיקה
                       </button>
@@ -139,28 +139,28 @@ export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
           {/* Mobile cards */}
           <div className="md:hidden flex flex-col gap-3">
             {filtered.map((supplier) => (
-              <div key={supplier.id} className="bg-white border border-gray-200 rounded-xl p-4">
+              <div key={supplier.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">{supplier.name}</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{supplier.name}</span>
                     <Badge>{DOMAIN_LABELS_HE[supplier.domain]}</Badge>
                   </div>
                 </div>
-                <div className="flex flex-col gap-1 text-sm text-gray-600 mb-3">
+                <div className="flex flex-col gap-1 text-sm text-gray-600 dark:text-gray-400 mb-3">
                   {supplier.contact_name && <span>{supplier.contact_name}</span>}
                   <span dir="ltr" className="text-start">{supplier.email}</span>
                   {supplier.phone && <span dir="ltr" className="text-start">{supplier.phone}</span>}
                 </div>
-                <div className="flex gap-2 pt-2 border-t border-gray-100">
+                <div className="flex gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
                   <button
                     onClick={() => openEdit(supplier)}
-                    className="text-sm text-blue-600 hover:text-blue-800 py-1 px-1"
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 py-1 px-1"
                   >
                     עריכה
                   </button>
                   <button
                     onClick={() => setDeleteTarget(supplier)}
-                    className="text-sm text-red-600 hover:text-red-800 py-1 px-1"
+                    className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 py-1 px-1"
                   >
                     מחיקה
                   </button>
@@ -185,10 +185,10 @@ export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
         onClose={() => { setDeleteTarget(null); setDeleteError(''); }}
         title="מחיקת ספק"
       >
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
           האם למחוק את הספק <strong>{deleteTarget?.name}</strong>?
         </p>
-        {deleteError && <p className="text-sm text-red-600 mb-4">{deleteError}</p>}
+        {deleteError && <p className="text-sm text-red-600 dark:text-red-400 mb-4">{deleteError}</p>}
         <div className="flex gap-3 justify-end">
           <Button
             variant="secondary"
