@@ -66,44 +66,80 @@ export function RfqDashboard({ rfqs, clients }: RfqDashboardProps) {
         </Link>
       </div>
 
-      {/* Table */}
-      <DataTable
-        headers={['לקוח', 'מק"ט', 'רוויזיה', 'כמות', 'סטטוס', 'תאריך', 'שליחה']}
-        isEmpty={filtered.length === 0}
-        emptyState={
-          <EmptyState
-            title="אין בקשות הצעת מחיר"
-            description="צור בקשה חדשה כדי להתחיל"
-            action={
-              <Link href="/rfq/new">
-                <Button>+ בקשה חדשה</Button>
-              </Link>
-            }
-          />
-        }
-      >
-        {filtered.map((rfq) => (
-          <tr key={rfq.id} className="hover:bg-gray-50">
-            <td className="px-4 py-3 font-medium text-gray-900">
-              <Link href={`/rfq/${rfq.id}`} className="hover:text-blue-600">
-                {rfq.client_name}
-              </Link>
-            </td>
-            <td className="px-4 py-3 text-gray-600" dir="ltr">{rfq.serial_number}</td>
-            <td className="px-4 py-3 text-gray-600">{formatRevision(rfq.revision_number)}</td>
-            <td className="px-4 py-3 text-gray-600">{rfq.base_quantity}</td>
-            <td className="px-4 py-3">
-              <StatusBadge status={rfq.status} />
-            </td>
-            <td className="px-4 py-3 text-gray-600">{formatDate(rfq.created_at)}</td>
-            <td className="px-4 py-3 text-gray-600">
-              {rfq.total_requests > 0
-                ? `${rfq.sent_requests}/${rfq.total_requests} נשלחו`
-                : '—'}
-            </td>
-          </tr>
-        ))}
-      </DataTable>
+      {/* Empty state */}
+      {filtered.length === 0 && (
+        <EmptyState
+          title="אין בקשות הצעת מחיר"
+          description="צור בקשה חדשה כדי להתחיל"
+          action={
+            <Link href="/rfq/new">
+              <Button>+ בקשה חדשה</Button>
+            </Link>
+          }
+        />
+      )}
+
+      {/* Desktop table */}
+      {filtered.length > 0 && (
+        <div className="hidden md:block">
+          <DataTable
+            headers={['לקוח', 'מק"ט', 'רוויזיה', 'כמות', 'סטטוס', 'תאריך', 'שליחה']}
+          >
+            {filtered.map((rfq) => (
+              <tr key={rfq.id} className="hover:bg-gray-50">
+                <td className="px-4 py-3 font-medium text-gray-900">
+                  <Link href={`/rfq/${rfq.id}`} className="hover:text-blue-600">
+                    {rfq.client_name}
+                  </Link>
+                </td>
+                <td className="px-4 py-3 text-gray-600" dir="ltr">{rfq.serial_number}</td>
+                <td className="px-4 py-3 text-gray-600">{formatRevision(rfq.revision_number)}</td>
+                <td className="px-4 py-3 text-gray-600">{rfq.base_quantity}</td>
+                <td className="px-4 py-3">
+                  <StatusBadge status={rfq.status} />
+                </td>
+                <td className="px-4 py-3 text-gray-600">{formatDate(rfq.created_at)}</td>
+                <td className="px-4 py-3 text-gray-600">
+                  {rfq.total_requests > 0
+                    ? `${rfq.sent_requests}/${rfq.total_requests} נשלחו`
+                    : '—'}
+                </td>
+              </tr>
+            ))}
+          </DataTable>
+        </div>
+      )}
+
+      {/* Mobile cards */}
+      {filtered.length > 0 && (
+        <div className="md:hidden flex flex-col gap-3">
+          {filtered.map((rfq) => (
+            <Link
+              key={rfq.id}
+              href={`/rfq/${rfq.id}`}
+              className="block bg-white border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-colors"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium text-gray-900">{rfq.client_name}</span>
+                <StatusBadge status={rfq.status} />
+              </div>
+              <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                <span dir="ltr">מק&quot;ט: {rfq.serial_number}</span>
+                <span>רוו׳ {formatRevision(rfq.revision_number)}</span>
+                <span>כמות: {rfq.base_quantity}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-gray-500">
+                <span>{formatDate(rfq.created_at)}</span>
+                <span>
+                  {rfq.total_requests > 0
+                    ? `${rfq.sent_requests}/${rfq.total_requests} נשלחו`
+                    : '—'}
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

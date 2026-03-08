@@ -138,9 +138,9 @@ export function RfqDetailView({ data }: RfqDetailViewProps) {
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
               מק&quot;ט: {rfq.serial_number}
             </h1>
             <StatusBadge status={rfq.status} />

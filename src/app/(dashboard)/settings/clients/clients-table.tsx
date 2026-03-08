@@ -61,71 +61,121 @@ export function ClientsTable({ clients }: ClientsTableProps) {
         <Button onClick={() => setFormOpen(true)}>+ לקוח חדש</Button>
       </div>
 
-      <DataTable
-        headers={["שם", "איש קשר", "אימייל", "טלפון", "פעולות"]}
-        isEmpty={clients.length === 0}
-        emptyState={
-          <EmptyState
-            title="אין לקוחות"
-            description="הוסף לקוח ראשון כדי להתחיל"
-            action={
-              <Button onClick={() => setFormOpen(true)}>+ לקוח חדש</Button>
-            }
-          />
-        }
-      >
-        {clients.map((client) => (
-          <Fragment key={client.id}>
-            <tr
-              key={client.id}
-              className="hover:bg-gray-50 cursor-pointer"
-              onClick={() => toggleExpand(client.id)}
-            >
-              <td className="px-4 py-3 font-medium text-gray-900">
-                <span className="me-2 text-gray-400">
-                  {expandedId === client.id ? "▾" : "▸"}
-                </span>
-                {client.name}
-              </td>
-              <td className="px-4 py-3 text-gray-600">
-                {client.contact_name ?? "—"}
-              </td>
-              <td className="px-4 py-3 text-gray-600" dir="ltr">
-                {client.contact_email ?? "—"}
-              </td>
-              <td className="px-4 py-3 text-gray-600" dir="ltr">
-                {client.contact_phone ?? "—"}
-              </td>
-              <td className="px-4 py-3">
+      {clients.length === 0 ? (
+        <EmptyState
+          title="אין לקוחות"
+          description="הוסף לקוח ראשון כדי להתחיל"
+          action={
+            <Button onClick={() => setFormOpen(true)}>+ לקוח חדש</Button>
+          }
+        />
+      ) : (
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block">
+            <DataTable headers={["שם", "איש קשר", "אימייל", "טלפון", "פעולות"]}>
+              {clients.map((client) => (
+                <Fragment key={client.id}>
+                  <tr
+                    className="hover:bg-gray-50 cursor-pointer"
+                    onClick={() => toggleExpand(client.id)}
+                  >
+                    <td className="px-4 py-3 font-medium text-gray-900">
+                      <span className="me-2 text-gray-400">
+                        {expandedId === client.id ? "▾" : "▸"}
+                      </span>
+                      {client.name}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {client.contact_name ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600" dir="ltr">
+                      {client.contact_email ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600" dir="ltr">
+                      {client.contact_phone ?? "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div
+                        className="flex gap-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          onClick={() => openEdit(client)}
+                          className="text-sm text-blue-600 hover:text-blue-800 py-1 px-1"
+                        >
+                          עריכה
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(client)}
+                          className="text-sm text-red-600 hover:text-red-800 py-1 px-1"
+                        >
+                          מחיקה
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {expandedId === client.id && (
+                    <tr key={`${client.id}-approvals`}>
+                      <td colSpan={5} className="px-8 py-4 bg-gray-50/50">
+                        <ClientApprovals clientId={client.id} />
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              ))}
+            </DataTable>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden flex flex-col gap-3">
+            {clients.map((client) => (
+              <div key={client.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div
-                  className="flex gap-2"
-                  onClick={(e) => e.stopPropagation()}
+                  className="p-4 cursor-pointer"
+                  onClick={() => toggleExpand(client.id)}
                 >
-                  <button
-                    onClick={() => openEdit(client)}
-                    className="text-sm text-blue-600 hover:text-blue-800"
-                  >
-                    עריכה
-                  </button>
-                  <button
-                    onClick={() => setDeleteTarget(client)}
-                    className="text-sm text-red-600 hover:text-red-800"
-                  >
-                    מחיקה
-                  </button>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-400">
+                        {expandedId === client.id ? "▾" : "▸"}
+                      </span>
+                      <span className="font-medium text-gray-900">{client.name}</span>
+                    </div>
+                    <div
+                      className="flex gap-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        onClick={() => openEdit(client)}
+                        className="text-sm text-blue-600 hover:text-blue-800 py-1 px-1"
+                      >
+                        עריכה
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(client)}
+                        className="text-sm text-red-600 hover:text-red-800 py-1 px-1"
+                      >
+                        מחיקה
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1 text-sm text-gray-600">
+                    {client.contact_name && <span>{client.contact_name}</span>}
+                    {client.contact_email && <span dir="ltr" className="text-start">{client.contact_email}</span>}
+                    {client.contact_phone && <span dir="ltr" className="text-start">{client.contact_phone}</span>}
+                  </div>
                 </div>
-              </td>
-            </tr>
-            {expandedId === client.id && (
-              <tr key={`${client.id}-approvals`}>
-                <td colSpan={5} className="px-8 py-4 bg-gray-50/50">
-                  <ClientApprovals clientId={client.id} />
-                </td>
-              </tr>
-            )}
-          </Fragment>
-        ))}
-      </DataTable>
+                {expandedId === client.id && (
+                  <div className="px-4 py-3 bg-gray-50/50 border-t border-gray-100">
+                    <ClientApprovals clientId={client.id} />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       <ClientForm open={formOpen} onClose={closeForm} client={editingClient} />
 

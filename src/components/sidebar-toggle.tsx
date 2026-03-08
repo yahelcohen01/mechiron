@@ -21,17 +21,20 @@ export function SidebarToggle() {
 
   return (
     <>
-      {/* Hamburger button — mobile only */}
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="md:hidden fixed top-4 start-4 z-40 rounded-lg bg-white border border-gray-200 p-2 shadow-sm"
-        aria-label="תפריט"
-      >
-        <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
+      {/* Sticky mobile header */}
+      <div className="sticky top-0 z-40 md:hidden flex items-center justify-between bg-white border-b border-gray-200 px-4 py-3">
+        <h1 className="text-lg font-bold text-gray-900">מחירון</h1>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="rounded-lg p-2 hover:bg-gray-100 transition-colors"
+          aria-label="תפריט"
+        >
+          <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
 
       {/* Overlay + slide-in panel */}
       {open && (
