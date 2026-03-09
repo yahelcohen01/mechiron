@@ -9,25 +9,27 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Select } from '@/components/ui/select';
 import type { RfqListItem, RfqStatus } from '@/lib/types';
 import { formatRevision, formatDate } from '@/lib/utils';
+import { useT } from '@/lib/i18n/locale-context';
 
 type RfqDashboardProps = {
   rfqs: RfqListItem[];
   clients: { id: string; name: string }[];
 };
 
-const statusOptions = [
-  { value: '', label: 'כל הסטטוסים' },
-  { value: 'draft', label: 'טיוטה' },
-  { value: 'in_progress', label: 'בתהליך' },
-  { value: 'completed', label: 'הושלם' },
-];
-
 export function RfqDashboard({ rfqs, clients }: RfqDashboardProps) {
+  const t = useT();
   const [clientFilter, setClientFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
+  const statusOptions = [
+    { value: '', label: t.rfqDashboard.allStatuses },
+    { value: 'draft', label: t.rfqDashboard.statusDraft },
+    { value: 'in_progress', label: t.rfqDashboard.statusInProgress },
+    { value: 'completed', label: t.rfqDashboard.statusCompleted },
+  ];
+
   const clientOptions = [
-    { value: '', label: 'כל הלקוחות' },
+    { value: '', label: t.rfqDashboard.allClients },
     ...clients.map((c) => ({ value: c.id, label: c.name })),
   ];
 
@@ -49,7 +51,7 @@ export function RfqDashboard({ rfqs, clients }: RfqDashboardProps) {
             options={clientOptions}
             value={clientFilter}
             onChange={(e) => setClientFilter(e.target.value)}
-            label="לקוח"
+            label={t.rfqDashboard.client}
           />
         </div>
         <div className="w-full sm:w-48">
@@ -57,23 +59,23 @@ export function RfqDashboard({ rfqs, clients }: RfqDashboardProps) {
             options={statusOptions}
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as RfqStatus | '')}
-            label="סטטוס"
+            label={t.common.status}
           />
         </div>
         <div className="flex-1 hidden sm:block" />
         <Link href="/rfq/new">
-          <Button className="w-full sm:w-auto">+ בקשה חדשה</Button>
+          <Button className="w-full sm:w-auto">+ {t.rfqDashboard.newRfq}</Button>
         </Link>
       </div>
 
       {/* Empty state */}
       {filtered.length === 0 && (
         <EmptyState
-          title="אין בקשות הצעת מחיר"
-          description="צור בקשה חדשה כדי להתחיל"
+          title={t.rfqDashboard.emptyTitle}
+          description={t.rfqDashboard.emptyDescription}
           action={
             <Link href="/rfq/new">
-              <Button>+ בקשה חדשה</Button>
+              <Button>+ {t.rfqDashboard.newRfq}</Button>
             </Link>
           }
         />
@@ -83,7 +85,7 @@ export function RfqDashboard({ rfqs, clients }: RfqDashboardProps) {
       {filtered.length > 0 && (
         <div className="hidden md:block">
           <DataTable
-            headers={['לקוח', 'מק"ט', 'רוויזיה', 'כמות', 'סטטוס', 'תאריך', 'שליחה']}
+            headers={[t.rfqDashboard.client, t.rfqDashboard.partSn, t.rfqDashboard.revision, t.rfqDashboard.quantity, t.common.status, t.rfqDashboard.date, t.rfqDashboard.sending]}
           >
             {filtered.map((rfq) => (
               <tr key={rfq.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
@@ -101,7 +103,7 @@ export function RfqDashboard({ rfqs, clients }: RfqDashboardProps) {
                 <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatDate(rfq.created_at)}</td>
                 <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
                   {rfq.total_requests > 0
-                    ? `${rfq.sent_requests}/${rfq.total_requests} נשלחו`
+                    ? `${rfq.sent_requests}/${rfq.total_requests} ${t.rfqDashboard.sent}`
                     : '—'}
                 </td>
               </tr>
@@ -124,15 +126,15 @@ export function RfqDashboard({ rfqs, clients }: RfqDashboardProps) {
                 <StatusBadge status={rfq.status} />
               </div>
               <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-2">
-                <span dir="ltr">מק&quot;ט: {rfq.serial_number}</span>
-                <span>רוו׳ {formatRevision(rfq.revision_number)}</span>
-                <span>כמות: {rfq.base_quantity}</span>
+                <span dir="ltr">{t.rfqDashboard.partSn}: {rfq.serial_number}</span>
+                <span>{t.rfqDashboard.revision} {formatRevision(rfq.revision_number)}</span>
+                <span>{t.rfqDashboard.quantity}: {rfq.base_quantity}</span>
               </div>
               <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                 <span>{formatDate(rfq.created_at)}</span>
                 <span>
                   {rfq.total_requests > 0
-                    ? `${rfq.sent_requests}/${rfq.total_requests} נשלחו`
+                    ? `${rfq.sent_requests}/${rfq.total_requests} ${t.rfqDashboard.sent}`
                     : '—'}
                 </span>
               </div>

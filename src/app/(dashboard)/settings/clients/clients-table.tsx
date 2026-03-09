@@ -10,12 +10,14 @@ import type { Client } from "@/lib/types";
 import { deleteClient } from "./actions";
 import { ClientForm } from "./client-form";
 import { ClientApprovals } from "./client-approvals";
+import { useT } from "@/lib/i18n/locale-context";
 
 type ClientsTableProps = {
   clients: Client[];
 };
 
 export function ClientsTable({ clients }: ClientsTableProps) {
+  const t = useT();
   const [formOpen, setFormOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
@@ -47,7 +49,7 @@ export function ClientsTable({ clients }: ClientsTableProps) {
       return;
     }
 
-    toast.success('הלקוח נמחק בהצלחה');
+    toast.success(t.clients.deleteSuccess);
     setDeleteTarget(null);
   }
 
@@ -58,22 +60,22 @@ export function ClientsTable({ clients }: ClientsTableProps) {
   return (
     <div>
       <div className="flex justify-end mb-4">
-        <Button onClick={() => setFormOpen(true)}>+ לקוח חדש</Button>
+        <Button onClick={() => setFormOpen(true)}>+ {t.clients.addClient}</Button>
       </div>
 
       {clients.length === 0 ? (
         <EmptyState
-          title="אין לקוחות"
-          description="הוסף לקוח ראשון כדי להתחיל"
+          title={t.clients.emptyTitle}
+          description={t.clients.emptyDescription}
           action={
-            <Button onClick={() => setFormOpen(true)}>+ לקוח חדש</Button>
+            <Button onClick={() => setFormOpen(true)}>+ {t.clients.addClient}</Button>
           }
         />
       ) : (
         <>
           {/* Desktop table */}
           <div className="hidden md:block">
-            <DataTable headers={["שם", "איש קשר", "אימייל", "טלפון", "פעולות"]}>
+            <DataTable headers={[t.common.name, t.clients.contactName, t.common.email, t.common.phone, t.common.actions]}>
               {clients.map((client) => (
                 <Fragment key={client.id}>
                   <tr
@@ -104,13 +106,13 @@ export function ClientsTable({ clients }: ClientsTableProps) {
                           onClick={() => openEdit(client)}
                           className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 py-1 px-1"
                         >
-                          עריכה
+                          {t.common.edit}
                         </button>
                         <button
                           onClick={() => setDeleteTarget(client)}
                           className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 py-1 px-1"
                         >
-                          מחיקה
+                          {t.common.delete}
                         </button>
                       </div>
                     </td>
@@ -150,13 +152,13 @@ export function ClientsTable({ clients }: ClientsTableProps) {
                         onClick={() => openEdit(client)}
                         className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 py-1 px-1"
                       >
-                        עריכה
+                        {t.common.edit}
                       </button>
                       <button
                         onClick={() => setDeleteTarget(client)}
                         className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 py-1 px-1"
                       >
-                        מחיקה
+                        {t.common.delete}
                       </button>
                     </div>
                   </div>
@@ -185,10 +187,10 @@ export function ClientsTable({ clients }: ClientsTableProps) {
           setDeleteTarget(null);
           setDeleteError("");
         }}
-        title="מחיקת לקוח"
+        title={t.clients.deleteClient}
       >
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          האם למחוק את הלקוח <strong>{deleteTarget?.name}</strong>?
+          {t.clients.deleteConfirm} <strong>{deleteTarget?.name}</strong>?
         </p>
         {deleteError && (
           <p className="text-sm text-red-600 dark:text-red-400 mb-4">{deleteError}</p>
@@ -201,10 +203,10 @@ export function ClientsTable({ clients }: ClientsTableProps) {
               setDeleteError("");
             }}
           >
-            ביטול
+            {t.common.cancel}
           </Button>
           <Button variant="danger" onClick={handleDelete} disabled={deleting}>
-            {deleting ? "מוחק..." : "מחיקה"}
+            {deleting ? t.common.deleting : t.common.delete}
           </Button>
         </div>
       </Modal>

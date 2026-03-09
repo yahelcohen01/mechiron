@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { MembersTable } from './members-table';
 import { updateOrganization } from './actions';
 import type { Account, User, PendingInvite } from '@/lib/types';
+import { useT } from '@/lib/i18n/locale-context';
 
 type OrganizationSettingsProps = {
   account: Account;
@@ -18,6 +19,7 @@ export function OrganizationSettings({
   members,
   pendingInvites,
 }: OrganizationSettingsProps) {
+  const t = useT();
   const [name, setName] = useState(account.name);
   const [senderEmail, setSenderEmail] = useState(account.sender_email);
   const [error, setError] = useState('');
@@ -41,10 +43,10 @@ export function OrganizationSettings({
         return;
       }
 
-      setSuccess('הפרטים עודכנו בהצלחה');
+      setSuccess(t.organization.updateSuccess);
       setTimeout(() => setSuccess(''), 3000);
     } catch {
-      setError('שגיאה לא צפויה');
+      setError(t.auth.unexpectedError);
     } finally {
       setLoading(false);
     }
@@ -54,7 +56,7 @@ export function OrganizationSettings({
     <div className="flex flex-col gap-8 max-w-3xl">
       {/* Organization details */}
       <section>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">פרטי ארגון</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t.organization.details}</h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {error && (
             <p className="rounded-lg bg-red-50 dark:bg-red-900/30 p-3 text-sm text-red-600 dark:text-red-400">{error}</p>
@@ -64,14 +66,14 @@ export function OrganizationSettings({
           )}
 
           <Input
-            label="שם חברה"
+            label={t.organization.companyName}
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
           />
 
           <Input
-            label="אימייל שולח"
+            label={t.organization.senderEmail}
             type="email"
             value={senderEmail}
             onChange={(e) => setSenderEmail(e.target.value)}
@@ -81,7 +83,7 @@ export function OrganizationSettings({
 
           <div>
             <Button type="submit" disabled={loading}>
-              {loading ? 'שומר...' : 'שמור שינויים'}
+              {loading ? t.common.saving : t.organization.saveChanges}
             </Button>
           </div>
         </form>

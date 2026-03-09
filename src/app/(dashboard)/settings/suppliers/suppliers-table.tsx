@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Modal } from '@/components/ui/modal';
-import { RFQ_DOMAINS, DOMAIN_LABELS_HE, type Supplier, type Client, type RfqDomain } from '@/lib/types';
+import { RFQ_DOMAINS, type Supplier, type Client, type RfqDomain } from '@/lib/types';
 import { deleteSupplier } from './actions';
 import { SupplierForm } from './supplier-form';
+import { useT } from '@/lib/i18n/locale-context';
 
 type SuppliersTableProps = {
   suppliers: Supplier[];
@@ -17,6 +18,7 @@ type SuppliersTableProps = {
 };
 
 export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
+  const t = useT();
   const [domainFilter, setDomainFilter] = useState<RfqDomain | 'all'>('all');
   const [formOpen, setFormOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
@@ -53,7 +55,7 @@ export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
       return;
     }
 
-    toast.success('הספק נמחק בהצלחה');
+    toast.success(t.suppliers.deleteSuccess);
     setDeleteTarget(null);
   }
 
@@ -69,7 +71,7 @@ export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
           }`}
         >
-          הכל ({suppliers.length})
+          {t.common.all} ({suppliers.length})
         </button>
         {RFQ_DOMAINS.map((domain) => {
           const count = suppliers.filter((s) => s.domain === domain).length;
@@ -83,7 +85,7 @@ export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
             >
-              {DOMAIN_LABELS_HE[domain]} ({count})
+              {t.domains[domain]} ({count})
             </button>
           );
         })}
@@ -91,26 +93,26 @@ export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
 
       {/* Add button */}
       <div className="flex justify-end mb-4">
-        <Button onClick={() => setFormOpen(true)}>+ ספק חדש</Button>
+        <Button onClick={() => setFormOpen(true)}>+ {t.suppliers.addSupplier}</Button>
       </div>
 
       {/* Empty state */}
       {filtered.length === 0 ? (
         <EmptyState
-          title="אין ספקים"
-          description={domainFilter === 'all' ? 'הוסף ספק ראשון כדי להתחיל' : 'אין ספקים בתחום זה'}
-          action={<Button onClick={() => setFormOpen(true)}>+ ספק חדש</Button>}
+          title={t.suppliers.emptyTitle}
+          description={domainFilter === 'all' ? t.suppliers.emptyDescription : t.suppliers.emptyDomainDescription}
+          action={<Button onClick={() => setFormOpen(true)}>+ {t.suppliers.addSupplier}</Button>}
         />
       ) : (
         <>
           {/* Desktop table */}
           <div className="hidden md:block">
-            <DataTable headers={['שם', 'תחום', 'איש קשר', 'אימייל', 'טלפון', 'פעולות']}>
+            <DataTable headers={[t.common.name, t.common.domain, t.clients.contactName, t.common.email, t.common.phone, t.common.actions]}>
               {filtered.map((supplier) => (
                 <tr key={supplier.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{supplier.name}</td>
                   <td className="px-4 py-3">
-                    <Badge>{DOMAIN_LABELS_HE[supplier.domain]}</Badge>
+                    <Badge>{t.domains[supplier.domain]}</Badge>
                   </td>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{supplier.contact_name ?? '—'}</td>
                   <td className="px-4 py-3 text-gray-600" dir="ltr">{supplier.email}</td>
@@ -121,13 +123,13 @@ export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
                         onClick={() => openEdit(supplier)}
                         className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 py-1 px-1"
                       >
-                        עריכה
+                        {t.common.edit}
                       </button>
                       <button
                         onClick={() => setDeleteTarget(supplier)}
                         className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 py-1 px-1"
                       >
-                        מחיקה
+                        {t.common.delete}
                       </button>
                     </div>
                   </td>
@@ -143,7 +145,7 @@ export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-gray-900 dark:text-gray-100">{supplier.name}</span>
-                    <Badge>{DOMAIN_LABELS_HE[supplier.domain]}</Badge>
+                    <Badge>{t.domains[supplier.domain]}</Badge>
                   </div>
                 </div>
                 <div className="flex flex-col gap-1 text-sm text-gray-600 dark:text-gray-400 mb-3">
@@ -156,13 +158,13 @@ export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
                     onClick={() => openEdit(supplier)}
                     className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 py-1 px-1"
                   >
-                    עריכה
+                    {t.common.edit}
                   </button>
                   <button
                     onClick={() => setDeleteTarget(supplier)}
                     className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 py-1 px-1"
                   >
-                    מחיקה
+                    {t.common.delete}
                   </button>
                 </div>
               </div>
@@ -183,10 +185,10 @@ export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
       <Modal
         open={!!deleteTarget}
         onClose={() => { setDeleteTarget(null); setDeleteError(''); }}
-        title="מחיקת ספק"
+        title={t.suppliers.deleteSupplier}
       >
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          האם למחוק את הספק <strong>{deleteTarget?.name}</strong>?
+          {t.suppliers.deleteConfirm} <strong>{deleteTarget?.name}</strong>?
         </p>
         {deleteError && <p className="text-sm text-red-600 dark:text-red-400 mb-4">{deleteError}</p>}
         <div className="flex gap-3 justify-end">
@@ -194,10 +196,10 @@ export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
             variant="secondary"
             onClick={() => { setDeleteTarget(null); setDeleteError(''); }}
           >
-            ביטול
+            {t.common.cancel}
           </Button>
           <Button variant="danger" onClick={handleDelete} disabled={deleting}>
-            {deleting ? 'מוחק...' : 'מחיקה'}
+            {deleting ? t.common.deleting : t.common.delete}
           </Button>
         </div>
       </Modal>

@@ -6,9 +6,11 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useT } from '@/lib/i18n/locale-context';
 
 export function LoginForm() {
   const router = useRouter();
+  const t = useT();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -27,13 +29,13 @@ export function LoginForm() {
       });
 
       if (authError) {
-        setError('אימייל או סיסמה שגויים');
+        setError(t.auth.invalidCredentials);
         return;
       }
 
       router.push('/');
     } catch {
-      setError('שגיאה בהתחברות, נסה שוב');
+      setError(t.auth.loginError);
     } finally {
       setLoading(false);
     }
@@ -41,14 +43,14 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">כניסה למערכת</h2>
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{t.auth.loginTitle}</h2>
 
       {error && (
         <p className="rounded-lg bg-red-50 dark:bg-red-900/30 p-3 text-sm text-red-600 dark:text-red-400">{error}</p>
       )}
 
       <Input
-        label="אימייל"
+        label={t.auth.email}
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
@@ -58,7 +60,7 @@ export function LoginForm() {
       />
 
       <Input
-        label="סיסמה"
+        label={t.auth.password}
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
@@ -68,13 +70,13 @@ export function LoginForm() {
       />
 
       <Button type="submit" disabled={loading} className="mt-2">
-        {loading ? 'מתחבר...' : 'כניסה'}
+        {loading ? t.auth.loggingIn : t.auth.login}
       </Button>
 
       <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-        אין לך חשבון?{' '}
+        {t.auth.noAccount}{' '}
         <Link href="/signup" className="text-blue-600 dark:text-blue-400 hover:underline">
-          הירשם
+          {t.auth.createAccount}
         </Link>
       </p>
     </form>

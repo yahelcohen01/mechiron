@@ -5,6 +5,7 @@ import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { inviteMember } from './actions';
+import { useT } from '@/lib/i18n/locale-context';
 
 type InviteModalProps = {
   open: boolean;
@@ -12,6 +13,7 @@ type InviteModalProps = {
 };
 
 export function InviteModal({ open, onClose }: InviteModalProps) {
+  const t = useT();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,21 +36,21 @@ export function InviteModal({ open, onClose }: InviteModalProps) {
       setEmail('');
       onClose();
     } catch {
-      setError('שגיאה לא צפויה');
+      setError(t.auth.unexpectedError);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="הזמן חבר צוות">
+    <Modal open={open} onClose={onClose} title={t.organization.inviteMember}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {error && (
           <p className="rounded-lg bg-red-50 dark:bg-red-900/30 p-3 text-sm text-red-600 dark:text-red-400">{error}</p>
         )}
 
         <Input
-          label="אימייל"
+          label={t.common.email}
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -59,10 +61,10 @@ export function InviteModal({ open, onClose }: InviteModalProps) {
 
         <div className="flex gap-2 justify-end">
           <Button type="button" variant="secondary" onClick={onClose}>
-            ביטול
+            {t.common.cancel}
           </Button>
           <Button type="submit" disabled={loading}>
-            {loading ? 'שולח...' : 'שלח הזמנה'}
+            {loading ? t.organization.sending : t.organization.sendInvite}
           </Button>
         </div>
       </form>

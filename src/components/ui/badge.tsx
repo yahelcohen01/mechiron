@@ -1,4 +1,7 @@
+'use client';
+
 import type { RfqStatus } from '@/lib/types';
+import { useT } from '@/lib/i18n/locale-context';
 
 const variants = {
   gray: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
@@ -21,13 +24,18 @@ export function Badge({ variant = 'gray', children }: BadgeProps) {
   );
 }
 
-export const STATUS_BADGE_MAP: Record<RfqStatus, { label: string; variant: keyof typeof variants }> = {
-  draft: { label: 'טיוטה', variant: 'gray' },
-  in_progress: { label: 'בתהליך', variant: 'blue' },
-  completed: { label: 'הושלם', variant: 'green' },
+const STATUS_VARIANT_MAP: Record<RfqStatus, keyof typeof variants> = {
+  draft: 'gray',
+  in_progress: 'blue',
+  completed: 'green',
 };
 
 export function StatusBadge({ status }: { status: RfqStatus }) {
-  const { label, variant } = STATUS_BADGE_MAP[status];
-  return <Badge variant={variant}>{label}</Badge>;
+  const t = useT();
+  const statusLabelMap: Record<RfqStatus, string> = {
+    draft: t.rfqDashboard.statusDraft,
+    in_progress: t.rfqDashboard.statusInProgress,
+    completed: t.rfqDashboard.statusCompleted,
+  };
+  return <Badge variant={STATUS_VARIANT_MAP[status]}>{statusLabelMap[status]}</Badge>;
 }
