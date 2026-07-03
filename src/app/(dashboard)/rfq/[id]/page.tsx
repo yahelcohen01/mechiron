@@ -1,7 +1,12 @@
+import { cache } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getRfqPageData } from './actions';
 import { RfqDetailView } from './rfq-detail';
+
+// generateMetadata and the page both need this data; React.cache dedupes them
+// into a single fetch per request instead of running getRfqPageData twice.
+const loadRfqPageData = cache(getRfqPageData);
 
 export async function generateMetadata({
   params,
@@ -9,7 +14,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const result = await getRfqPageData(id);
+  const result = await loadRfqPageData(id);
   if (result.success && result.data) {
     return { title: `מק"ט: ${result.data.rfq.serial_number}` };
   }
@@ -22,7 +27,7 @@ export default async function RfqDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const result = await getRfqPageData(id);
+  const result = await loadRfqPageData(id);
 
   if (!result.success) {
     return (

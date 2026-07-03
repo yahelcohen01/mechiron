@@ -90,7 +90,10 @@ export function RfqDashboard({ rfqs, clients }: RfqDashboardProps) {
             {filtered.map((rfq) => (
               <tr key={rfq.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                 <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
-                  <Link href={`/rfq/${rfq.id}`} className="hover:text-blue-600 dark:hover:text-blue-400">
+                  {/* prefetch disabled: the detail page is expensive to render
+                      (generateMetadata + full data fetch); prefetching every row
+                      on the dashboard spun up 3-4s of background rendering. */}
+                  <Link href={`/rfq/${rfq.id}`} prefetch={false} className="hover:text-blue-600 dark:hover:text-blue-400">
                     {rfq.client_name}
                   </Link>
                 </td>
@@ -119,6 +122,7 @@ export function RfqDashboard({ rfqs, clients }: RfqDashboardProps) {
             <Link
               key={rfq.id}
               href={`/rfq/${rfq.id}`}
+              prefetch={false}
               className="block bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
             >
               <div className="flex items-center justify-between mb-2">
