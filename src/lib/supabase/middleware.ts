@@ -29,22 +29,27 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
+  // getClaims verifies the token locally once asymmetric signing keys are
+  // active (no auth-server round-trip per request); it still calls getSession()
+  // internally, preserving the token refresh + cookie writes this middleware
+  // is responsible for. Falls back to a getUser() network call on legacy HS256.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: claimsData,
+  } = await supabase.auth.getClaims();
+  const isAuthenticated = !!claimsData?.claims;
 
   const isAuthRoute =
     request.nextUrl.pathname.startsWith('/login') ||
     request.nextUrl.pathname.startsWith('/signup') ||
     request.nextUrl.pathname.startsWith('/invite');
 
-  if (!user && !isAuthRoute) {
+  if (!isAuthenticated && !isAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
-  if (user && isAuthRoute) {
+  if (isAuthenticated && isAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/';
     return NextResponse.redirect(url);

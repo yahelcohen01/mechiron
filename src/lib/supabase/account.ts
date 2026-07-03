@@ -1,20 +1,25 @@
+import { cache } from 'react';
 import { createClient } from './server';
 
-export async function getAccountId(): Promise<string> {
+// Wrapped in React.cache so the auth + users lookup is deduped across the many
+// call sites that run within a single request (dashboard alone calls this 3x).
+export const getAccountId = cache(async (): Promise<string> => {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims verifies the JWT locally (no network) once the project uses
+  // asymmetric signing keys, falling back to a getUser() network call on the
+  // legacy HS256 secret. Either way the token is fully validated.
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub;
 
-  if (!user) {
+  if (!userId) {
     throw new Error('Not authenticated');
   }
 
   const { data, error } = await supabase
     .from('users')
     .select('account_id')
-    .eq('id', user.id)
+    .eq('id', userId)
     .single();
 
   if (error || !data) {
@@ -22,9 +27,9 @@ export async function getAccountId(): Promise<string> {
   }
 
   return data.account_id;
-}
+});
 
-export async function getAccountName(): Promise<string> {
+export const getAccountName = cache(async (): Promise<string> => {
   const supabase = await createClient();
   const accountId = await getAccountId();
 
@@ -39,4 +44,4 @@ export async function getAccountName(): Promise<string> {
   }
 
   return data.name;
-}
+});
