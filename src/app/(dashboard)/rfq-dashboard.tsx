@@ -97,7 +97,7 @@ export function RfqDashboard({ rfqs, clients }: RfqDashboardProps) {
                     {rfq.client_name}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-gray-600 dark:text-gray-400" dir="ltr">{rfq.serial_number}</td>
+                <td className="px-4 py-3 text-gray-600 dark:text-gray-400" dir="rtl">{rfq.serial_number}</td>
                 <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatRevision(rfq.revision_number)}</td>
                 <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{rfq.base_quantity}</td>
                 <td className="px-4 py-3">
