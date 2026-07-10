@@ -25,7 +25,7 @@
 #   --dry-run       Show which migrations WOULD be applied, then exit. No changes.
 #   --seed          Also apply supabase/seed.sql (dev sample data). Optional.
 #   --write-env     After a successful push, point the app at the new project by
-#                   updating SUPABASE_URL / ANON / SERVICE_ROLE in .env.local
+#                   updating URL / PUBLISHABLE_KEY / SECRET_KEY in .env.local
 #                   (a timestamped backup is made first). Requires the NEW_*
 #                   values in the env file.
 #   -y, --yes       Skip the interactive confirmation prompt.
@@ -127,8 +127,8 @@ ok "Migrations applied."
 # ---- optional: point the app at the new project ----
 if $DO_WRITE_ENV; then
   ENV_LOCAL="$ROOT_DIR/.env.local"
-  if [[ -z "${NEW_SUPABASE_URL:-}${NEW_SUPABASE_ANON_KEY:-}${NEW_SUPABASE_SERVICE_ROLE_KEY:-}" ]]; then
-    err "--write-env requires NEW_SUPABASE_URL / NEW_SUPABASE_ANON_KEY / NEW_SUPABASE_SERVICE_ROLE_KEY in $ENV_FILE. Skipping env update."
+  if [[ -z "${NEW_SUPABASE_URL:-}${NEW_SUPABASE_PUBLISHABLE_KEY:-}${NEW_SUPABASE_SECRET_KEY:-}" ]]; then
+    err "--write-env requires NEW_SUPABASE_URL / NEW_SUPABASE_PUBLISHABLE_KEY / NEW_SUPABASE_SECRET_KEY in $ENV_FILE. Skipping env update."
   elif [[ ! -f "$ENV_LOCAL" ]]; then
     err ".env.local not found — create it from .env.local.example first. Skipping env update."
   else
@@ -138,9 +138,9 @@ if $DO_WRITE_ENV; then
 const fs = require('fs');
 const file = process.argv[2];
 const map = {
-  SUPABASE_URL: process.env.NEW_SUPABASE_URL,
-  SUPABASE_ANON_KEY: process.env.NEW_SUPABASE_ANON_KEY,
-  SUPABASE_SERVICE_ROLE_KEY: process.env.NEW_SUPABASE_SERVICE_ROLE_KEY,
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEW_SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEW_SUPABASE_PUBLISHABLE_KEY,
+  SUPABASE_SECRET_KEY: process.env.NEW_SUPABASE_SECRET_KEY,
 };
 let text = fs.readFileSync(file, 'utf8');
 for (const [key, val] of Object.entries(map)) {
@@ -161,7 +161,7 @@ cat <<'EOF'
   1. Recreate the `drawings` bucket check: it is created by 005_storage_drawings.sql
      (verify in Dashboard -> Storage that the bucket exists and is private).
   2. If you did NOT use --write-env, update .env.local with the new project's
-     SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY.
+     NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY / SUPABASE_SECRET_KEY.
   3. Restart the dev server (or redeploy) so the new env is picked up.
   4. Sign up a fresh user and confirm accounts/users rows + a drawing upload.
 
