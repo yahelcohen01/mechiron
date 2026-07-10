@@ -104,12 +104,12 @@ supabase db push --db-url "<TARGET_DB_URL>" --include-seed
 Or paste `supabase/seed.sql` into the SQL editor. Skip this if you want a truly empty project.
 
 ### 5. Swap the app credentials
-In `.env.local`, replace the three Supabase values with the **new project's** credentials (Dashboard → Project Settings → API):
+In `.env.local`, replace the three Supabase values with the **new project's** credentials (Dashboard → Settings → API Keys). Use the new-style keys — the legacy `anon`/`service_role` keys are deprecated:
 
 ```dotenv
-SUPABASE_URL=<new-project-url>
-SUPABASE_ANON_KEY=<new-anon-key>
-SUPABASE_SERVICE_ROLE_KEY=<new-service-role-key>
+NEXT_PUBLIC_SUPABASE_URL=<new-project-url>
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<sb_publishable_...>
+SUPABASE_SECRET_KEY=<sb_secret_...>
 ```
 
 - `RESEND_API_KEY` is provider-independent — **no change needed**.
@@ -130,7 +130,7 @@ Restart the dev server (or redeploy) so the new env is picked up.
 - [ ] Migrations `001`→`005` applied in order, no errors.
 - [ ] `drawings` bucket exists, private, with 3 authenticated policies.
 - [ ] (Optional) `seed.sql` run if dev data wanted.
-- [ ] `.env.local` (and deployment env) updated with the 3 new Supabase values.
+- [ ] `.env.local` (and deployment env) updated with the 3 new Supabase values (URL + publishable + secret).
 - [ ] Dev server / deployment restarted.
 - [ ] Fresh signup creates matching `accounts` + `users` rows.
 - [ ] RFQ creation with a drawing upload succeeds (Storage insert + signed-URL read).
