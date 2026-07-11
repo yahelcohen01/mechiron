@@ -3,7 +3,7 @@ import type { Dictionary } from './index';
 export const he: Dictionary = {
   sidebar: {
     appName: 'מחירון',
-    rfqDashboard: 'בקשות הצעת מחיר',
+    rfqDashboard: 'הצעות מחיר',
     newRfq: 'בקשה חדשה',
     clientManagement: 'ניהול לקוחות',
     supplierManagement: 'ניהול ספקים',
@@ -131,7 +131,7 @@ export const he: Dictionary = {
     expiresAt: 'תוקף',
   },
   rfqDashboard: {
-    title: 'בקשות הצעת מחיר',
+    title: 'הצעות מחיר',
     newRfq: 'בקשה חדשה',
     searchPlaceholder: 'חיפוש לפי מק"ט...',
     client: 'לקוח',
@@ -144,7 +144,7 @@ export const he: Dictionary = {
     sending: 'שליחה',
     sent: 'נשלחו',
     createdAt: 'תאריך יצירה',
-    emptyTitle: 'אין בקשות הצעת מחיר',
+    emptyTitle: 'אין הצעות מחיר קיימות',
     emptyDescription: 'צור בקשה חדשה כדי להתחיל',
     statusDraft: 'טיוטה',
     statusInProgress: 'בתהליך',
@@ -172,6 +172,6 @@ export const he: Dictionary = {
   },
   metadata: {
     appName: 'מחירון',
-    appDescription: 'מערכת ניהול בקשות הצעת מחיר',
+    appDescription: 'מערכת ניהול הצעות מחיר',
   },
 };
