@@ -13,8 +13,14 @@ Step-by-step operational procedures for recurring or high-risk tasks.
 - [Apply a database migration (reversible)](./runbooks/apply-migration/README.md) — apply a pending migration to the existing project, safely and reversibly: dry-run preview, `db:migrate:safe` (pg_dump backup then push) for destructive changes, paired down scripts in [`supabase/rollback/`](../supabase/rollback/).
 - [Migrate to a new Supabase project (no data)](./runbooks/migrate-to-new-supabase-project/README.md) — provision a fresh Supabase project (e.g. a different region) and point the app at it, starting with an empty database. Includes a script ([`migrate-to-new-project.sh`](./runbooks/migrate-to-new-supabase-project/migrate-to-new-project.sh)) that applies all migrations.
 
+### Research
+Investigations into tools, frameworks, and technical decisions, each written up against primary sources.
+
+- [Vercel Eve & the agent stack](./research/vercel-eve-agent-stack.md) — evaluates Vercel Eve vs. the Vercel AI SDK for Mechiron's customer-facing agent. Verdict: build on the AI SDK (GA) rather than Eve (beta). Covers Eve's maturity, the full agent stack, deployment/lock-in, pricing, fit for Mechiron, and a follow-up Q&A.
+
 ## Conventions for this folder
 
 - **Runbooks** live in [`runbooks/`](./runbooks/). Each runbook gets its **own folder** containing a `README.md` (the procedure) plus any scripts/templates it needs, so everything for a procedure sits together.
+- **Research** notes live in [`research/`](./research/) — one Markdown file per investigation, citing primary sources inline. Distinguish verified facts from marketing claims and analysis.
 - Keep runbooks reproducible: prefer migrations and scripts over "click here in the dashboard" steps. When a manual step is unavoidable, call it out explicitly.
 - When a procedure changes the database, it must reference a migration in [`../supabase/migrations/`](../supabase/migrations/).
