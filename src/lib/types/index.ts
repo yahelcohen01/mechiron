@@ -4,6 +4,7 @@ export const RFQ_DOMAINS = [
   'coating',
   'passivation',
   'quenching',
+  'hardening',
   'subcontractor',
 ] as const;
 
@@ -14,6 +15,7 @@ export const DOMAIN_LABELS_HE: Record<RfqDomain, string> = {
   coating: 'ציפוי',
   passivation: 'פסיבציה',
   quenching: 'חישול',
+  hardening: 'חיסום',
   subcontractor: 'קבלן משנה',
 };
 
@@ -22,6 +24,7 @@ export const SPEC_LABELS_HE: Record<RfqDomain, string> = {
   coating: 'סוג ציפוי',
   passivation: 'סוג פסיבציה',
   quenching: 'סוג חישול',
+  hardening: 'חיסום',
   subcontractor: 'סוג עבודה',
 };
 

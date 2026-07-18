@@ -168,6 +168,7 @@ export const he: Dictionary = {
     coating: 'ציפוי',
     passivation: 'פסיבציה',
     quenching: 'חישול',
+    hardening: 'חיסום',
     subcontractor: 'קבלן משנה',
   },
   metadata: {

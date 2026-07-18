@@ -10,6 +10,7 @@ Project-level documentation for Mechiron (מחירון) — the RFQ management a
 ### Runbooks
 Step-by-step operational procedures for recurring or high-risk tasks.
 
+- [Apply a database migration (reversible)](./runbooks/apply-migration/README.md) — apply a pending migration to the existing project, safely and reversibly: dry-run preview, `db:migrate:safe` (pg_dump backup then push) for destructive changes, paired down scripts in [`supabase/rollback/`](../supabase/rollback/).
 - [Migrate to a new Supabase project (no data)](./runbooks/migrate-to-new-supabase-project/README.md) — provision a fresh Supabase project (e.g. a different region) and point the app at it, starting with an empty database. Includes a script ([`migrate-to-new-project.sh`](./runbooks/migrate-to-new-supabase-project/migrate-to-new-project.sh)) that applies all migrations.
 
 ## Conventions for this folder

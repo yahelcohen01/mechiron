@@ -168,6 +168,7 @@ export const en: Dictionary = {
     coating: 'Coating',
     passivation: 'Passivation',
     quenching: 'Quenching',
+    hardening: 'Hardening',
     subcontractor: 'Subcontractor',
   },
   metadata: {

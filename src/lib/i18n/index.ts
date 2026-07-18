@@ -180,6 +180,7 @@ export type Dictionary = {
     coating: string;
     passivation: string;
     quenching: string;
+    hardening: string;
     subcontractor: string;
   };
   metadata: {

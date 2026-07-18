@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**Mechiron** (מחירון) — a web app for Israeli CNC manufacturers to manage their Request for Quotation process. When a client brings a part drawing, the manufacturer requests quotes from suppliers across 5 domains: raw material, coating, passivation, quenching, and subcontractor.
+**Mechiron** (מחירון) — a web app for Israeli CNC manufacturers to manage their Request for Quotation process. When a client brings a part drawing, the manufacturer requests quotes from suppliers across 6 domains: raw material, coating, passivation, quenching, hardening, and subcontractor.
 
 **Target market:** Israeli manufacturers. The entire UI is in Hebrew with full RTL support.
 
@@ -62,7 +62,7 @@ See `rfq-system-spec.md` for the full schema with column definitions and constra
 
 ## Domain Constants
 
-There are exactly 5 RFQ domains. Enforced via CHECK constraints in the DB.
+There are exactly 6 RFQ domains. Enforced via CHECK constraints in the DB.
 
 ```typescript
 export const RFQ_DOMAINS = [
@@ -70,6 +70,7 @@ export const RFQ_DOMAINS = [
   'coating',
   'passivation',
   'quenching',
+  'hardening',
   'subcontractor',
 ] as const;
 
@@ -80,6 +81,7 @@ export const DOMAIN_LABELS_HE: Record<RfqDomain, string> = {
   coating: 'ציפוי',
   passivation: 'פסיבציה',
   quenching: 'חישול',
+  hardening: 'חיסום',
   subcontractor: 'קבלן משנה',
 };
 ```
@@ -95,7 +97,7 @@ export const DOMAIN_LABELS_HE: Record<RfqDomain, string> = {
 - Clients and parts can be created inline from the form.
 
 ### Part Page
-- 5 domain sections, each optional (skip irrelevant domains).
+- 6 domain sections, each optional (skip irrelevant domains).
 - Base quantity can be overridden per domain.
 - Approved suppliers for the client are shown first. Non-approved suppliers can be added with a confirmation modal (one-time use, NOT saved to approved list).
 - New suppliers can be created inline (domain auto-set from the section).

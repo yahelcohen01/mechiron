@@ -35,6 +35,10 @@ yarn-error.log*
 !.env.example
 !docs/runbooks/migrate-to-new-supabase-project/.env.migration.example
 
+# DB backups taken before migrations (contain data — never commit)
+/backups/*
+!/backups/.gitkeep
+
 # vercel
 .vercel
 
