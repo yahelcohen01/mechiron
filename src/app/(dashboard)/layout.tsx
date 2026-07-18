@@ -15,7 +15,7 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-screen">
       {/* Desktop sidebar — first in DOM: RIGHT in RTL, LEFT in LTR */}
-      <aside className="hidden md:flex w-56 bg-white dark:bg-gray-900 border-e border-gray-200 dark:border-gray-700 flex-col p-6 shrink-0">
+      <aside className="hidden md:flex w-56 bg-white dark:bg-gray-900 border-e border-gray-200 dark:border-gray-700 flex-col p-6 shrink-0 sticky top-0 self-start h-screen overflow-y-auto">
         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-8">
           {t.sidebar.appName}
         </h1>
