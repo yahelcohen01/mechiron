@@ -22,13 +22,11 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## Testing
 
-Tests are colocated with the code they cover as `*.test.ts` / `*.test.tsx`; billed, non-deterministic tests that must never run in CI are named `*.eval.test.ts` and run only via `npm run test:eval`.
+Tests are colocated with the code they cover as `*.test.ts`; billed, non-deterministic tests that must never run unattended are named `*.eval.test.ts` and run only via `npm run test:eval`.
 
 ```bash
-npm test          # CI lane: deterministic, offline, free
-npm run test:watch
-npm run test:eval # evaluation lane: real model calls, costs money
-npm run typecheck
+npm test          # deterministic, offline, free
+npm run test:eval # real model calls, costs money
 ```
 
 ## Learn More

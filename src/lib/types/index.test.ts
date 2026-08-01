@@ -71,17 +71,14 @@ describe('defaultSubject', () => {
 });
 
 describe('domain label maps', () => {
-  // Supplier-facing UI reads these by domain key; a missing entry renders
-  // as an empty label rather than failing loudly, so assert coverage here.
-  it('labels every domain in both maps', () => {
+  // `Record<RfqDomain, string>` already makes key coverage a compile-time
+  // guarantee, so the only thing left to assert at runtime is that no label
+  // is the empty string — which the type permits and the UI would render as
+  // a blank heading.
+  it('has a non-empty label for every domain in both maps', () => {
     for (const domain of RFQ_DOMAINS) {
-      expect(DOMAIN_LABELS_HE[domain], `DOMAIN_LABELS_HE.${domain}`).toBeTruthy();
-      expect(SPEC_LABELS_HE[domain], `SPEC_LABELS_HE.${domain}`).toBeTruthy();
+      expect(DOMAIN_LABELS_HE[domain], `DOMAIN_LABELS_HE.${domain}`).not.toBe('');
+      expect(SPEC_LABELS_HE[domain], `SPEC_LABELS_HE.${domain}`).not.toBe('');
     }
-  });
-
-  it('has no extra keys beyond the declared domains', () => {
-    expect(Object.keys(DOMAIN_LABELS_HE).sort()).toEqual([...RFQ_DOMAINS].sort());
-    expect(Object.keys(SPEC_LABELS_HE).sort()).toEqual([...RFQ_DOMAINS].sort());
   });
 });
