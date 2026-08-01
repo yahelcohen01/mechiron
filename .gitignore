@@ -50,3 +50,6 @@ supabase/.temp/
 # prototypes
 /prototypes/*
 /prototype/*
+
+# local
+/examples/*
