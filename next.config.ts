@@ -1,4 +1,8 @@
 import type { NextConfig } from "next";
+// PROTOTYPE — mounts the throwaway eve agent on this app's origin at
+// /eve/v1/*, and boots its dev server alongside `next dev`. Remove together
+// with src/components/prototype/ and the `eve` dependency.
+import { withEve } from "eve/next";
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -12,4 +16,6 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withEve(nextConfig, {
+  eveRoot: "./prototypes/mechiron-agent-prototype",
+});

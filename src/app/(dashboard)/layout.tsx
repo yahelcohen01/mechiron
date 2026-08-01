@@ -1,4 +1,7 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
+// PROTOTYPE — remove with src/components/prototype/ when the variant is picked.
+import { AgentChatShellPROTOTYPE } from '@/components/prototype/agent-chat/agent-chat-shell';
 import { SidebarToggle } from '@/components/sidebar-toggle';
 import { SidebarNav } from '@/components/sidebar-nav';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -13,6 +16,9 @@ export default async function DashboardLayout({
   const t = await getDictionary();
 
   return (
+    /* PROTOTYPE wrapper — slides this whole shell aside for the agent panel. */
+    <Suspense>
+    <AgentChatShellPROTOTYPE>
     <div className="flex min-h-screen">
       {/* Desktop sidebar — first in DOM: RIGHT in RTL, LEFT in LTR */}
       <aside className="hidden md:flex w-56 bg-white dark:bg-gray-900 border-e border-gray-200 dark:border-gray-700 flex-col p-6 shrink-0 sticky top-0 self-start h-screen overflow-y-auto">
@@ -41,5 +47,7 @@ export default async function DashboardLayout({
         <main className="flex-1 p-4 md:p-8">{children}</main>
       </div>
     </div>
+    </AgentChatShellPROTOTYPE>
+    </Suspense>
   );
 }
