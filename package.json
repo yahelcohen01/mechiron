@@ -7,6 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:eval": "vitest run --config vitest.eval.config.mts",
     "db:migrate": "supabase db push",
     "db:migrate:dry": "supabase db push --dry-run",
     "db:backup": "pg_dump \"$DATABASE_URL\" > backups/backup_$(date +%Y%m%d%H%M%S).sql",
@@ -30,6 +34,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }
