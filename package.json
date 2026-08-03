@@ -13,7 +13,7 @@
     "test:eval": "vitest run --config vitest.eval.config.mts",
     "db:migrate": "supabase db push",
     "db:migrate:dry": "supabase db push --dry-run",
-    "db:backup": "pg_dump \"$DATABASE_URL\" > backups/backup_$(date +%Y%m%d%H%M%S).sql",
+    "db:backup": "bash scripts/db-backup.sh",
     "db:migrate:safe": "npm run db:backup && supabase db push",
     "db:seed": "psql \"$DATABASE_URL\" -f supabase/seed.sql"
   },
