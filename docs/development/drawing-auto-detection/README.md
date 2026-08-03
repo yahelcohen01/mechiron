@@ -1,6 +1,12 @@
 # Drawing Auto-Detection
 
-Status: **specced, not built** · Migrations: `008`, `009` · Owner: @yahelcohen01
+Status: **specced, not built; reading half validated, design revised** · Migrations: `008`, `009` · Owner: @yahelcohen01
+
+> **Read *Validation results* (below) before implementing anything.** The reading
+> pipeline was tested ahead of being built and the result invalidated part of this
+> design: the two-pass read and the server-side rasteriser are not needed, and two
+> recorded sample values were wrong. Superseded passages are struck through rather
+> than deleted, so the reasoning that led to them stays legible.
 
 Automatic extraction of manufacturing specifications from an uploaded engineering drawing, using a vision model via Vercel AI Gateway, so that an RFQ's domain sections arrive pre-filled.
 
@@ -27,7 +33,7 @@ The system learns from those assignments: once the user tells it that a given sp
 ### Core extraction
 
 1. As an RFQ creator, I want the system to start reading my drawing the moment I select the file, so that extraction overlaps with the time I spend filling in the rest of the form rather than adding to it.
-2. As an RFQ creator, I want the material specification read off the drawing automatically, so that I do not have to transcribe `AL 6061 T651 PLATE PER AMS-QQ-A-250/11` by hand.
+2. As an RFQ creator, I want the material specification read off the drawing automatically, so that I do not have to transcribe `AL 6061 T651 PLATE PER AMS 4027` by hand.
 3. As an RFQ creator, I want the coating specification read off the drawing automatically, so that anodizing and plating callouts reach the coating supplier without manual entry.
 4. As an RFQ creator, I want the passivation specification read off the drawing automatically, so that a `PASSIVATION TREATMENT PER AMS-QQ-P-35 TYPE VIII` callout populates the passivation domain.
 5. As an RFQ creator, I want hardening and quenching specifications read off the drawing where they are unambiguous, so that heat-treat requirements are not lost.
@@ -108,14 +114,64 @@ Two representative drawings were analysed (`examples/test-n8n.pdf`, `examples/te
 
 Extractable content:
 
-- Sample 1 — `MATERIAL: AL 6061 T651 PLATE PER AMS-QQ-A-250/11` (raw material); `FINISH: ANODIC COATING PER MIL-PRF-8625 … SEAL WATER` (coating). Nothing else.
-- Sample 2 — `MATERIAL: CRES ROD 15-5PH PER AMS 5659` (raw material); `HEAT TREAT TO H-1075 PER AMS-H-6875 CLASS D` (ambiguous); `FINISH – PASSIVATION TREATMENT PER AMS-QQ-P-35 TYPE VIII` (passivation); `BAKE PART AFTER PLATING WITHIN 3 HOURS PER ASTM B850 CLASS ER-9` (ambiguous).
+- Sample 1 — `MATERIAL: AL 6061 T651 PLATE PER AMS 4027.` (raw material); `FINISH: ANODIC COATING PER MIL-PRF-8625 TYPE I CLASS 1, 2.0 TO 10.0 MICRON THICK, SEAL WATER.` (coating). Nothing else.
+- Sample 2 — `MATERIAL: CRES ROD 15-5PH PER AMS 5659` (raw material); `HEAT TREAT TO H1025 PER AMS-H-6875 CLASS D.` (ambiguous); `FINISH - PASSIVATION TREATMENT PER AMS-QQ-P-35 TYPE VIII.` (passivation); `BAKE PART AFTER PLATING WITHIN 3 HOURS PER ASTM B850 CLASS ER-9.` (ambiguous).
 
-Three constraints follow:
+> **Correction, 2026-08-03.** Two of the values above were previously recorded as
+> `AMS-QQ-A-250/11` and `H-1075`. **Both were wrong** — they were introduced during
+> this document's own analysis phase and never checked against the drawings. The
+> sheets read `AMS 4027` and `H1025`, confirmed visually by @yahelcohen01.
+>
+> This matters beyond the typo. Both incorrect values are *real, plausible*
+> designations for the same materials, so neither looked wrong on the page. They
+> had already been copied into issue #12 as pass/fail acceptance criteria, where
+> they would have failed a model that was reading the drawing correctly and sent
+> someone to "fix" working behaviour. They were caught only because a validation
+> run disagreed with them and the disagreement was checked rather than assumed to
+> be a model error. Treat every value in this section as evidence, not as ground
+> truth, until it has been confirmed against the sheet.
 
-1. **The embedded raster is the detail ceiling.** At roughly 2000 px on the long edge, rendering at a higher DPI invents nothing. Note text is already marginal at native resolution. Any downscale — and every vision model downscales a full sheet — loses it. This is the single biggest determinant of accuracy.
-2. **Pages carry `/Rotate 90`.** Naive rasterisers ignore or misapply this; rotated text measurably degrades OCR.
+Three constraints were originally derived from this. **The first did not survive validation** — see *Validation results* below:
+
+1. ~~**The embedded raster is the detail ceiling.** At roughly 2000 px on the long edge, rendering at a higher DPI invents nothing. Note text is already marginal at native resolution. Any downscale — and every vision model downscales a full sheet — loses it. This is the single biggest determinant of accuracy.~~ **Superseded.** The claim that every vision model downscales a full sheet was true of the previous model generation and is no longer. Both sheets sit under the current high-resolution input caps, and a direct read of the unmodified PDF recovered every known line character-exact.
+2. **Pages carry `/Rotate 90`.** Naive rasterisers ignore or misapply this; rotated text measurably degrades OCR. Still true of the files, but no longer something this feature must handle itself while it sends the PDF whole — the provider applies it. It becomes relevant again if, and only if, we rasterise for a UI surface.
 3. **Nothing on either drawing indicates a subcontractor.** There is no textual anchor for that domain.
+
+### Validation results — 2026-08-03
+
+The reading half of the design was tested before being built, by sending both
+unmodified sample PDFs to a vision model and scoring the transcription against
+the known lines. **All six known specification lines came back character-exact**,
+including the full anodic-coating and bake-after-plating callouts, on
+`google/gemini-2.5-flash-lite` — the *cheapest* model reachable, chosen only
+because the gateway key was restricted to free tier. Latency was 3.4 s and 4.2 s;
+the whole page cost roughly 1,350 input tokens.
+
+Consequences, in order of how much they change:
+
+- **The two-pass locate/read design is unnecessary.** It existed solely to avoid a
+  downscale that does not occur. A single pass over the whole PDF is sufficient
+  and is also more robust to unusual sheet layouts, since there is no
+  notes-block localisation step left to defeat.
+- **Server-side rasterisation is not required for accuracy.** It retains a
+  possible role in UI surfaces only (the progress thumbnail, and the source crop
+  on the unassigned-findings card). Both may be better solved client-side or, in
+  the crop's case, may be unnecessary given that the verbatim source line is
+  already returned. Do not build it until one of those surfaces is designed and
+  needs it.
+- **The latency budget is wrong.** The estimate of 8–15 s drove the design of the
+  live progress panel. Measured single-pass latency is under 5 s.
+- **`google/gemini-3-pro` is not a valid model ID** on Vercel AI Gateway. The
+  Pro-tier candidate is `google/gemini-3.1-pro-preview`, which is a *preview*
+  model — a consideration for a feature shipping enabled by default. Given that
+  `flash-lite` already scores 6/6 on reading, model selection should be driven by
+  classification quality, not OCR.
+
+**Scope of this result.** Two drawings, same CAD system, same language, similar
+layout, one run each against a non-deterministic model. It says nothing about
+scanned, skewed, or multi-sheet drawings, and **nothing at all about the
+classification and abstention half of the feature**, which remains the genuinely
+unvalidated part.
 
 ### Reading pipeline
 
@@ -125,16 +181,36 @@ Three constraints follow:
 
 **The existing upload path is deliberately left untouched.** An earlier version of this design had RFQ creation *move* the staged file to its final path to avoid a second upload. That was withdrawn: a move is a copy followed by a delete, and a partial failure orphans or loses a customer's drawing — in a code path that works correctly today, for a modest latency win. RFQ creation continues to upload the file exactly as it does now; the staged copy is scratch space that only extraction reads.
 
-**Rasterisation.** `pdfjs-dist` in a Node runtime. Chosen because no native binaries are available in the deployment environment, and because it honours `/Rotate` correctly, which addresses constraint 2. Sheet 1 only.
+**Rasterisation.** ~~`pdfjs-dist` in a Node runtime. Chosen because no native binaries are available in the deployment environment, and because it honours `/Rotate` correctly, which addresses constraint 2. Sheet 1 only.~~
 
-**Two-pass read.** Because of constraint 1, the page is never sent to the model whole at reduced resolution:
+**Superseded.** No server-side rasterisation is needed for reading; the PDF is sent
+as-is. `pdfjs-dist` may return if a UI surface needs pixels — see *Validation
+results*. Its original justifications (no native binaries in the deployment
+environment, correct `/Rotate` handling) still hold and should be reused if so.
 
-- *Pass 1 — locate.* The downscaled full page is sent with a single question: where are the notes block and title block? Returns bounding boxes. Cheap, and low resolution is sufficient for locating a large contiguous region.
-- *Pass 2 — read.* Those regions are cropped from the source raster **at native resolution and never downscaled**, and sent for verbatim reading and classification.
+**Single-pass read — the design as validated.** The unmodified PDF is sent whole,
+with one request: transcribe the specification callouts verbatim and classify each
+one. The measured result is character-exact transcription in under 5 seconds.
 
-Two alternatives were rejected: sending the PDF bytes directly to a PDF-native model (simplest, but eats the downscale and is expected to misread note text), and sending a fixed grid of native-resolution tiles without a localisation pass (dumber and roughly twice the tokens).
+~~**Two-pass read.** Because of constraint 1, the page is never sent to the model whole at reduced resolution:~~
 
-**Model.** Gemini 3 Pro via Vercel AI Gateway, selected for dense small-text document OCR. Requires `AI_GATEWAY_API_KEY`. Splitting reading and classification across two models was considered and deferred — start single-model, split only if classification specifically proves to be the weak half.
+- ~~*Pass 1 — locate.* The downscaled full page is sent with a single question: where are the notes block and title block? Returns bounding boxes. Cheap, and low resolution is sufficient for locating a large contiguous region.~~
+- ~~*Pass 2 — read.* Those regions are cropped from the source raster **at native resolution and never downscaled**, and sent for verbatim reading and classification.~~
+
+**Superseded.** The two-pass design existed only to route around a downscale that
+does not occur. Of the two alternatives originally rejected, the first — *"sending
+the PDF bytes directly to a PDF-native model (simplest, but eats the downscale and
+is expected to misread note text)"* — was rejected on a prediction that testing
+disproved. It is now the chosen design. The second (a fixed grid of
+native-resolution tiles) remains rejected and is now the fallback's fallback.
+
+**Model.** Via Vercel AI Gateway; requires `AI_GATEWAY_API_KEY`. The originally
+named "Gemini 3 Pro" **is not a valid gateway model ID**. Since reading is solved
+even at the cheapest tier, pick the model on classification quality and cost, not
+on OCR strength — and re-run the evaluation lane against whichever model ships.
+Splitting reading and classification across two models was considered and deferred
+— start single-model, split only if classification specifically proves to be the
+weak half.
 
 ### Classification and abstention
 
@@ -174,7 +250,13 @@ AI-filled fields render with a sparkle marker and tinted border until the user e
 
 On file-select the upload area is replaced by an inline panel containing a thumbnail of the actual rendered drawing page with a scanning sweep passing over it, beneath which live status lines advance as the real pipeline reaches each stage (`מעלה שרטוט` → `מאתר בלוק הערות` → `קורא מפרטים`). Each finding then types itself in as it is parsed.
 
-The progress shown is real, not decorative. Expected latency is roughly 8–15 seconds for the two-pass read — long enough that a generic spinner would read as broken.
+The progress shown is real, not decorative. ~~Expected latency is roughly 8–15 seconds for the two-pass read — long enough that a generic spinner would read as broken.~~
+
+**Revised.** Measured single-pass latency is **3.4–4.2 seconds**, not 8–15. At that
+duration the elaborate panel is likely over-built: a plain loading state may be
+adequate, and the staged status lines (`מעלה שרטוט` → `מאתר בלוק הערות` → `קורא מפרטים`)
+no longer map to real stages, since notes-block localisation no longer happens.
+Re-open this design when #15 is picked up.
 
 ### Failure behaviour
 
@@ -280,9 +362,9 @@ The developer elected to ship with `ai_extraction_enabled` defaulting to **true*
 
 ### New dependencies
 
-- `pdfjs-dist` — PDF rasterisation with correct `/Rotate` handling.
+- ~~`pdfjs-dist` — PDF rasterisation with correct `/Rotate` handling.~~ **Not needed.** No longer required for reading; revisit only if a UI surface needs pixels.
 - `ai` with the Vercel AI Gateway provider.
-- `AI_GATEWAY_API_KEY` — added to `.env.local` by the developer directly.
+- `AI_GATEWAY_API_KEY` — added to `.env.local` by the developer directly. **Note:** the key in use during validation was restricted to free tier, which blocked every model above `gemini-2.5-flash-lite` despite a positive credit balance. Resolve before running the evaluation lane against the production model.
 
 ---
 
@@ -304,10 +386,21 @@ This is preferred to seams at the rasteriser, the prompt builder, or the classif
 
 ### Two test modes across that seam
 
-1. **Deterministic (CI-safe, no model call).** Covers the rasterisation half: that `/Rotate 90` is applied, that the located regions are non-empty, and that crops preserve native resolution rather than downscaling. Fast and free. This is where constraints 1 and 2 from the evidence section are protected against regression.
+1. ~~**Deterministic (CI-safe, no model call).** Covers the rasterisation half: that `/Rotate 90` is applied, that the located regions are non-empty, and that crops preserve native resolution rather than downscaling.~~ **Superseded** — there is no rasterisation half to protect. The CI lane still exists (see `vitest.config.mts`) and should cover the deterministic parts that remain: prompt/context assembly, parsing and validating the model response, applying learned mappings, and degrading to "found nothing" when the `008` tables are absent.
 2. **Evaluation (manual, billed).** The full pipeline against `examples/test-n8n.pdf` and `examples/test-n8n-2.pdf` as fixtures, asserting that the known material, coating, and passivation specifications are found, and that the ambiguous heat-treatment lines abstain rather than classify. Run deliberately, not in CI, because it costs money and is non-deterministic.
 
-Additional real drawings should be added as fixtures as they are encountered, particularly any whose layout defeats the localisation pass.
+**Assert the corrected values.** The fixtures' known lines are `AMS 4027` and
+`H1025` — not `AMS-QQ-A-250/11` and `H-1075`. See the correction note in *Evidence
+from sample drawings*.
+
+**When an eval disagrees with this document, check the drawing before assuming the
+model is wrong.** That is not a general principle; it is the specific mistake this
+document already made once, and the reason the two values above needed correcting.
+
+Additional real drawings should be added as fixtures as they are encountered.
+Reading is now validated on two sheets of one CAD style; the untested cases are
+scanned or skewed sheets, multi-sheet drawings, and — most importantly —
+classification and abstention, which no result so far touches.
 
 ---
 
@@ -335,11 +428,32 @@ Depending on the confidentiality terms in place with those customers, that trans
 
 This was raised explicitly and the developer elected to proceed with the feature enabled by default. `clients.ai_extraction_enabled` exists so that a customer's objection can be honoured per-client in one statement rather than requiring a migration and a backfill conversation after the fact. **This is a mitigation, not a resolution**, and it is recorded here deliberately.
 
-### The accuracy question is unresolved until real use
+### The accuracy question — reading resolved, classification still open
 
-The largest technical unknown is whether the two-pass native-resolution read is reliable on 8-point note text embedded in a ~2000 px raster. The two-pass design exists specifically to address that ceiling, but it has not been validated against real drawings. If it proves unreliable, the fallback ladder is: increase crop overlap, then send fixed native-resolution tiles without the localisation pass, then split reading from classification across two models.
+~~The largest technical unknown is whether the two-pass native-resolution read is reliable on 8-point note text embedded in a ~2000 px raster.~~ **Answered.** Reading
+small note text is not the bottleneck: a direct read of both sample PDFs recovered
+every known line character-exact, at the cheapest model tier, in under 5 seconds.
+The two-pass design built to solve this problem has been dropped.
 
-Since the feature ships enabled, this validation happens in production on the first real RFQs rather than behind a flag. Findings from those first uses should be recorded here.
+**The largest remaining unknown is classification and abstention** — whether the
+model reliably assigns a specification to the right domain, and reliably declines
+on the hardening/quenching boundary instead of guessing. Nothing measured so far
+speaks to it. If reading regresses on a harder sheet (scanned, skewed, lower
+resolution), the fallback ladder is: rasterise sheet 1 ourselves and send the page
+as an image, then send fixed native-resolution tiles, then split reading from
+classification across two models.
+
+**A note on how the reading question got answered**, because the method
+generalises better than the result. The spec asserted that direct PDF reading
+"is expected to misread note text" — a prediction, written as though it were a
+finding, that justified the feature's two most complex components. Testing it cost
+about five cents and twenty minutes, and disproved it. It also incidentally caught
+two wrong values that were already embedded in a ticket's acceptance criteria.
+Prefer measuring a load-bearing assumption over building around it.
+
+Since the feature ships enabled, validation of the classification half happens in
+production on the first real RFQs rather than behind a flag. Findings from those
+first uses should be recorded here.
 
 ### Hebrew domain labels
 
