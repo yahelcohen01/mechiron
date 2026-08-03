@@ -78,7 +78,7 @@ CREATE TABLE rfq_drawing_findings (
   id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   extraction_id     UUID NOT NULL REFERENCES rfq_drawing_extractions(id) ON DELETE CASCADE,
   label             TEXT,
-  text              TEXT NOT NULL,
+  raw_text          TEXT NOT NULL,
   confidence        TEXT NOT NULL CHECK (confidence IN ('high', 'low')),
   page              INTEGER NOT NULL DEFAULT 1 CHECK (page > 0),
   bbox              JSONB,

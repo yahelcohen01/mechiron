@@ -204,7 +204,7 @@ rfq_drawing_extractions
 
 rfq_drawing_findings
   id, extraction_id,
-  label, text          -- verbatim as read
+  label, raw_text      -- verbatim as read
   confidence           -- high | low
   page, bbox (jsonb)   -- enables showing the source crop
   domain               -- null = unassigned
