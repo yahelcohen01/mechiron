@@ -177,9 +177,35 @@ unvalidated part.
 
 **Trigger point.** Extraction fires on file-select, not on submit, so that it overlaps with the remainder of form entry. Two alternatives were considered and rejected: running it inside RFQ creation (makes creation hostage to a model call) and running it after redirect on the RFQ page (rejected by the developer in favour of the simpler single trigger point).
 
-**Staging location.** The file is uploaded on select to `{account_id}/_pending/{uuid}/{filename}`, because no `rfq_id` exists yet. A scheduled sweeper deletes pending prefixes older than 24 hours.
+~~**Staging location.** The file is uploaded on select to `{account_id}/_pending/{uuid}/{filename}`, because no `rfq_id` exists yet. A scheduled sweeper deletes pending prefixes older than 24 hours.~~
 
-**The existing upload path is deliberately left untouched.** An earlier version of this design had RFQ creation *move* the staged file to its final path to avoid a second upload. That was withdrawn: a move is a copy followed by a delete, and a partial failure orphans or loses a customer's drawing — in a code path that works correctly today, for a modest latency win. RFQ creation continues to upload the file exactly as it does now; the staged copy is scratch space that only extraction reads.
+**Superseded — no staging.** The picked file is posted straight to the server, read
+in memory, and the findings are returned in the same response. Nothing is persisted
+at file-select time.
+
+The staging prefix existed to park bytes where a *background job* could find them,
+because the two-pass read was budgeted at 8–15 s — too long to hold a request open.
+Measured single-pass latency is under 5 s, which is an ordinary request. Extraction
+needs *bytes*, not a *stored object*.
+
+This deletes the `_pending/` prefix, the second upload, and the 24-hour sweeper
+(issue #21, closed). Findings live in the form's client-side state until submit,
+and are written to the database alongside the RFQ.
+
+**Transport: a Route Handler, not a Server Action.** Next.js caps server-action
+request bodies at 1 MB by default and `next.config.ts` sets no `bodySizeLimit`; a
+large drawing would fail with an unhelpful error. Route handlers have no such cap
+(the platform limit is 100 MB). The endpoint enforces its own explicit size ceiling
+and rejects oversized files with a clear message rather than burning time and model
+spend on them.
+
+**Trade-off, stated honestly.** Nothing is durable mid-flight, so a dropped
+connection loses the read and the user re-picks the file — cheap at 4 s, and the
+file-hash cache makes the retry free. Revisit if extraction slows materially
+(multi-sheet, tiling fallback), at which point the background-job shape and its
+staging return.
+
+**The existing upload path is deliberately left untouched.** RFQ creation continues to upload the file exactly as it does now, to `{account_id}/{rfq_id}/{filename}`. An earlier version of this design had RFQ creation *move* a staged file to its final path to avoid a second upload. That was withdrawn: a move is a copy followed by a delete, and a partial failure orphans or loses a customer's drawing — in a code path that works correctly today, for a modest latency win. With staging removed there is no second upload to avoid, and this path is simply unaffected.
 
 **Rasterisation.** ~~`pdfjs-dist` in a Node runtime. Chosen because no native binaries are available in the deployment environment, and because it honours `/Rotate` correctly, which addresses constraint 2. Sheet 1 only.~~
 
@@ -336,8 +362,7 @@ UPDATE clients SET ai_extraction_enabled = false;
 psql "$DATABASE_URL" -f supabase/rollback/009_ai_extraction_columns.down.sql
 psql "$DATABASE_URL" -f supabase/rollback/008_drawing_extractions.down.sql
 
-# 4. storage
-#    delete the {account_id}/_pending/ prefix
+# no storage step: extraction never writes to storage
 ```
 
 `009` reverts before `008` so that nothing references a dropped object mid-way.
@@ -349,7 +374,7 @@ psql "$DATABASE_URL" -f supabase/rollback/008_drawing_extractions.down.sql
 | `008` — three new tables | Trivially | `DROP TABLE` ×3; nothing else references them |
 | `009` — two new columns | Trivially | `DROP COLUMN` ×2; both nullable or defaulted, no table rewrite |
 | Application code | Yes | Promote the previous deployment |
-| Staged storage files | Yes | Delete the `_pending/` prefix |
+| ~~Staged storage files~~ | ~~Yes~~ | ~~Delete the `_pending/` prefix~~ — no longer applicable; extraction writes nothing to storage |
 | AI-written spec values | Yes | Identifiable via `spec_source` |
 | **Emails already sent to suppliers** | **No** | Mitigated by the unreviewed-AI send confirmation |
 | **Drawings already transmitted to the model provider** | **No** | Mitigated by `clients.ai_extraction_enabled` |
@@ -380,7 +405,7 @@ Tests assert externally observable behaviour: given a drawing file, what finding
 
 ### Proposed seam
 
-**One seam**, at the highest available point: the extraction pipeline exposed as a single function taking file bytes plus context (the account's learned mappings and existing spec vocabulary) and returning findings. Everything else in the feature — the staged upload, the server action, the progress panel, the unassigned card — is thin glue around it and is exercised manually.
+**One seam**, at the highest available point: the extraction pipeline exposed as a single function taking file bytes plus context (the account's learned mappings and existing spec vocabulary) and returning findings. Everything else in the feature — the upload route handler, the progress panel, the unassigned card — is thin glue around it and is exercised manually.
 
 This is preferred to seams at the rasteriser, the prompt builder, or the classifier individually, on the grounds that fewer seams are better and this one is the highest point that still isolates the risky logic.
 
