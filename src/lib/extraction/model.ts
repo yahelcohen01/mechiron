@@ -36,6 +36,13 @@ export type ModelResponse = {
   findings: ModelFinding[];
   /** Kept whole for `rfq_drawing_extractions.raw_response`. */
   raw: unknown;
+  usage?: {
+    inputTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+  };
+  /** `length` here means the answer was truncated — findings may be missing. */
+  finishReason?: string;
 };
 
 /**
@@ -54,7 +61,7 @@ export type ModelResponse = {
 export async function callGatewayModel(
   request: ModelRequest
 ): Promise<ModelResponse> {
-  const { output, response } = await generateText({
+  const { output, response, usage, finishReason } = await generateText({
     model: request.model,
     output: Output.object({ schema: modelResponseSchema }),
     messages: [
@@ -73,5 +80,10 @@ export async function callGatewayModel(
     ],
   });
 
-  return { findings: output.findings, raw: response.body ?? output };
+  return {
+    findings: output.findings,
+    raw: response.body ?? output,
+    usage,
+    finishReason,
+  };
 }

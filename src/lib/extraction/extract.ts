@@ -1,4 +1,5 @@
 import { toDrawingFindings } from './findings';
+import { createLogger, type Logger } from '@/lib/logger';
 import { callGatewayModel, type ModelRequest, type ModelResponse } from './model';
 import { buildExtractionPrompt } from './prompt';
 import type {
@@ -19,12 +20,21 @@ import type {
  */
 export const DEFAULT_EXTRACTION_MODEL = 'google/gemini-2.5-flash-lite';
 
+/** Log scope for this feature; filter on it in platform log search. */
+export const EXTRACTION_LOG_SCOPE = 'drawing-extraction';
+
 export type ModelCall = (request: ModelRequest) => Promise<ModelResponse>;
 
 export type ExtractOptions = {
   model?: string;
   /** Injection seam for the CI lane; defaults to the real gateway call. */
   callModel?: ModelCall;
+  /**
+   * Defaults to a `drawing-extraction` scoped logger at the app's `LOG_LEVEL`.
+   * Pass `parentLogger.child('drawing-extraction')` from a request handler to
+   * keep the run correlated with the request that caused it.
+   */
+  logger?: Logger;
 };
 
 /**
@@ -54,32 +64,96 @@ export async function extractDrawingSpecs(
   context: ExtractionContext,
   options: ExtractOptions = {}
 ): Promise<ExtractionResult> {
+  const log = options.logger ?? createLogger({ scope: EXTRACTION_LOG_SCOPE });
   const empty: ExtractionResult = {
     findings: [],
     model: null,
     rawResponse: null,
   };
 
-  if (!context.tablesAvailable) return empty;
-  if (file.bytes.byteLength === 0) return empty;
+  log.info('extraction.start', {
+    bytes: file.bytes.byteLength,
+    filename: file.filename ?? null,
+    mediaType: file.mediaType ?? 'application/pdf',
+    learnedMappings: context.learnedMappings.length,
+    existingVocabulary: context.existingVocabulary.length,
+    tablesAvailable: context.tablesAvailable,
+  });
+
+  if (!context.tablesAvailable) {
+    // Not an error. The 008 migration has been rolled back under a deployment
+    // that still has this code, and degrading beats erroring the RFQ page.
+    log.warn('extraction.skipped', {
+      reason: 'the 008 tables are unavailable; nowhere to persist findings',
+    });
+    return empty;
+  }
+
+  if (file.bytes.byteLength === 0) {
+    log.warn('extraction.skipped', { reason: 'empty file' });
+    return empty;
+  }
 
   const model =
     options.model ?? process.env.AI_EXTRACTION_MODEL ?? DEFAULT_EXTRACTION_MODEL;
   const callModel = options.callModel ?? callGatewayModel;
+  const prompt = buildExtractionPrompt(context);
 
-  const response = await callModel({
+  log.info('model.request', {
     model,
-    prompt: buildExtractionPrompt(context),
-    file: {
-      bytes: file.bytes,
-      mediaType: file.mediaType ?? 'application/pdf',
-      filename: file.filename,
-    },
+    promptChars: prompt.length,
+    bytes: file.bytes.byteLength,
+  });
+  log.debug('model.request.prompt', { prompt });
+
+  const startedAt = Date.now();
+  let response;
+  try {
+    response = await callModel({
+      model,
+      prompt,
+      file: {
+        bytes: file.bytes,
+        mediaType: file.mediaType ?? 'application/pdf',
+        filename: file.filename,
+      },
+    });
+  } catch (error) {
+    log.error('model.failed', {
+      model,
+      latencyMs: Date.now() - startedAt,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
+
+  const latencyMs = Date.now() - startedAt;
+  log.info('model.response', {
+    model,
+    latencyMs,
+    returnedFindings: response.findings?.length ?? 0,
+    inputTokens: response.usage?.inputTokens ?? null,
+    outputTokens: response.usage?.outputTokens ?? null,
+    finishReason: response.finishReason ?? null,
   });
 
-  return {
-    findings: toDrawingFindings(response.findings ?? [], context),
+  if (response.finishReason === 'length') {
+    // The answer was cut off, so callouts are missing from the end of it.
+    // Silent loss is the failure user story 19 exists to prevent.
+    log.warn('model.truncated', {
+      model,
+      reason: 'response hit the output limit; findings may be missing',
+    });
+  }
+
+  const findings = toDrawingFindings(response.findings ?? [], context, log);
+
+  log.info('extraction.complete', {
     model,
-    rawResponse: response.raw,
-  };
+    latencyMs,
+    totalMs: log.elapsed(),
+    findings: findings.length,
+  });
+
+  return { findings, model, rawResponse: response.raw };
 }

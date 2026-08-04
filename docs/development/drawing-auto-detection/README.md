@@ -455,6 +455,29 @@ The developer elected to ship with `ai_extraction_enabled` defaulting to **true*
 - `ai` (v7) with the Vercel AI Gateway provider, plus `zod` for the response schema. Both installed in #12.
 - `AI_GATEWAY_API_KEY` — added to `.env.local` by the developer directly. **Note:** the key in use during validation was restricted to free tier, which blocked every model above `gemini-2.5-flash-lite` despite a positive credit balance. Re-confirmed still in force on 2026-08-04; the free tier also rate-limits hard enough that three reads in a minute fail. Resolve (#27) before running the evaluation lane against the production model.
 - `AI_EXTRACTION_MODEL` — optional override for the gateway model ID. Defaults to `google/gemini-2.5-flash-lite`, which is a *constraint*, not a considered choice: it is the only model the current key can reach.
+- `LOG_LEVEL` — application-wide, not specific to this feature. See *Observability* below.
+
+### Observability
+
+The pipeline logs through the shared application logger (`src/lib/logger.ts`),
+under the scope `drawing-extraction`. One JSON object per line:
+
+```
+LOG_LEVEL=info npm run test:eval
+[drawing-extraction] {"level":"info","event":"model.response","latencyMs":2895,"inputTokens":1967,...}
+[drawing-extraction] {"level":"info","event":"findings.summary","kept":2,"unassigned":0,"guardOverrides":0,...}
+```
+
+`guardOverrides` in `findings.summary` is the number worth watching: it counts
+the times the model proposed a heat-treatment domain the printed text did not
+support. A rising count means the prompt and the model disagree about the
+abstention rule — the failure that cost this ticket two eval cycles and which is
+otherwise invisible, because the output looks like a normal abstention.
+
+**Verbatim drawing text is logged only at `debug`.** Per the *Defense data
+disclosure* note, the content of a customer's drawing is the sensitive part;
+`info` carries lengths, domains, and decisions, which is enough to explain a
+surprising result without copying the drawing into a log aggregator.
 
 ---
 

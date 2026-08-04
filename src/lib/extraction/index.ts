@@ -8,6 +8,7 @@
  */
 export {
   DEFAULT_EXTRACTION_MODEL,
+  EXTRACTION_LOG_SCOPE,
   extractDrawingSpecs,
   type ExtractOptions,
   type ModelCall,

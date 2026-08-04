@@ -1,3 +1,4 @@
+import { silentLogger, type Logger } from '@/lib/logger';
 import type { ModelFinding } from './model';
 import type {
   DrawingFinding,
@@ -128,16 +129,54 @@ const matchVocabulary = (
  */
 export function toDrawingFindings(
   modelFindings: ModelFinding[],
-  context: ExtractionContext
+  context: ExtractionContext,
+  log: Logger = silentLogger
 ): DrawingFinding[] {
   const findings: DrawingFinding[] = [];
+  let dropped = 0;
+  let guardOverrides = 0;
+  let learnedAssignments = 0;
+  let vocabularyReuses = 0;
 
-  for (const finding of modelFindings) {
-    const stripped = stripLeadingLabel(finding.text ?? '', finding.label);
-    if (stripped.length === 0) continue;
+  for (const [index, finding] of modelFindings.entries()) {
+    const original = finding.text ?? '';
+    const stripped = stripLeadingLabel(original, finding.label);
 
-    const rawText = matchVocabulary(stripped, context.existingVocabulary)
-      ?? stripped;
+    if (stripped.length === 0) {
+      dropped += 1;
+      log.warn('finding.dropped', {
+        index,
+        reason: 'empty after label stripping',
+        label: finding.label,
+        originalLength: original.length,
+      });
+      continue;
+    }
+
+    if (stripped !== original.trim().replace(/\.$/, '')) {
+      log.debug('finding.label_stripped', {
+        index,
+        label: finding.label,
+        before: original,
+        after: stripped,
+      });
+    }
+
+    const vocabularyMatch = matchVocabulary(
+      stripped,
+      context.existingVocabulary
+    );
+    const rawText = vocabularyMatch ?? stripped;
+
+    if (vocabularyMatch !== undefined && vocabularyMatch !== stripped) {
+      vocabularyReuses += 1;
+      log.info('finding.vocabulary_reused', { index });
+      log.debug('finding.vocabulary_reused.detail', {
+        index,
+        read: stripped,
+        reusedExisting: vocabularyMatch,
+      });
+    }
 
     // Anything that is not a domain this feature is allowed to assign —
     // including `subcontractor`, which the schema never offers but which a
@@ -148,18 +187,54 @@ export function toDrawingFindings(
       ? finding.domain
       : null;
 
-    let domain: ExtractableDomain | null =
-      proposed !== null && hasAnchor(proposed, rawText) ? proposed : null;
+    if (finding.domain !== 'unknown' && proposed === null) {
+      log.warn('finding.domain_not_permitted', {
+        index,
+        proposed: finding.domain,
+      });
+    }
+
+    const anchored = proposed !== null && hasAnchor(proposed, rawText);
+    let domain: ExtractableDomain | null = anchored ? proposed : null;
     let assignmentSource: DrawingFinding['assignmentSource'] =
       domain === null ? null : 'auto';
+
+    if (proposed !== null && !anchored) {
+      // The line worth watching. This fires when the model inferred a heat
+      // treatment from a temper code or standard number instead of reading it
+      // off the drawing — the failure that cost this ticket two eval cycles.
+      guardOverrides += 1;
+      log.info('finding.guard_override', {
+        index,
+        proposed,
+        reason: 'no literal anchor word in the text',
+      });
+      log.debug('finding.guard_override.detail', { index, proposed, rawText });
+    }
 
     if (domain === null) {
       const learned = findMapping(rawText, context.learnedMappings);
       if (learned) {
         domain = learned.domain;
         assignmentSource = 'learned';
+        learnedAssignments += 1;
+        log.info('finding.learned_mapping_applied', {
+          index,
+          domain: learned.domain,
+          pattern: learned.pattern,
+        });
       }
     }
+
+    log.info('finding.classified', {
+      index,
+      domain,
+      assignmentSource,
+      confidence: finding.confidence,
+      label: finding.label,
+      textLength: rawText.length,
+    });
+    log.debug('finding.classified.detail', { index, rawText });
 
     findings.push({
       label: finding.label?.trim() || null,
@@ -169,6 +244,17 @@ export function toDrawingFindings(
       assignmentSource,
     });
   }
+
+  log.info('findings.summary', {
+    returnedByModel: modelFindings.length,
+    kept: findings.length,
+    dropped,
+    unassigned: findings.filter((finding) => finding.domain === null).length,
+    lowConfidence: findings.filter((f) => f.confidence === 'low').length,
+    guardOverrides,
+    learnedAssignments,
+    vocabularyReuses,
+  });
 
   return findings;
 }

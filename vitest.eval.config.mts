@@ -39,6 +39,11 @@ export default mergeConfig(
       fileParallelism: false,
       maxConcurrency: 1,
 
+      // Vitest buffers console output and drops it for passing files, which
+      // is the wrong default for this lane: the pipeline's own log lines are
+      // most of the point of running it. Combine with LOG_LEVEL=info.
+      disableConsoleIntercept: true,
+
       // Model output is non-deterministic; a retry would turn a real
       // classification regression into an intermittent pass. Failures here
       // are meant to be read, not re-rolled.
