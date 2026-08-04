@@ -1,6 +1,6 @@
 # Drawing Auto-Detection
 
-Status: **specced, not built; reading half validated, design revised** · Migrations: `008`, `009` · Owner: @yahelcohen01
+Status: **extraction pipeline built (#12); reading and classification both validated on two sheets; no UI wired yet** · Migrations: `008`, `009` · Owner: @yahelcohen01
 
 > **Read *Validation results* (below) before implementing anything.** The reading
 > pipeline was tested ahead of being built and the result invalidated part of this
@@ -172,6 +172,38 @@ layout, one run each against a non-deterministic model. It says nothing about
 scanned, skewed, or multi-sheet drawings, and **nothing at all about the
 classification and abstention half of the feature**, which remains the genuinely
 unvalidated part.
+
+### Classification results — 2026-08-04 (issue #12)
+
+The first evaluation of the *classification* half, on the same two sheets and
+the same `google/gemini-2.5-flash-lite`. Reading was character-exact again on
+both sheets, including `AMS 4027` and `H1025`.
+
+Classification was correct on first attempt for every unambiguous line —
+material, coating, and passivation each landed in the right domain on both
+sheets, and nothing was ever assigned to `subcontractor`.
+
+**Abstention was not.** On the first run the model classified
+`HEAT TREAT TO H1025 PER AMS-H-6875 CLASS D` as `hardening`. It had not misread
+anything; it had reasoned correctly that H1025 is an age-hardening condition for
+15-5PH and applied that knowledge. This is precisely the failure the
+over-abstaining design exists to prevent, and it was invisible to the reading
+evaluation that preceded it.
+
+The fix was a prompt rule, not a model change: **judge only on words literally
+printed, and never infer a domain from what a standard number, class, temper
+code, or material condition designation means.** The relevant sentence is in
+`src/lib/extraction/prompt.ts`. With it, both ambiguous lines abstain.
+
+The generalisable point: the model's *domain knowledge* is the adversary here,
+not its eyesight. A vision model that knows metallurgy will happily supply the
+inference the drawing does not state. Rules phrased as "only when X is
+explicit" are read as permission to establish X by reasoning; rules phrased as
+"only when the word X literally appears" are not.
+
+Still unmeasured: any sheet that is scanned, skewed, multi-sheet, or from a
+different CAD system, and every classification boundary these two sheets do not
+happen to contain.
 
 ### Reading pipeline
 
@@ -388,8 +420,9 @@ The developer elected to ship with `ai_extraction_enabled` defaulting to **true*
 ### New dependencies
 
 - ~~`pdfjs-dist` — PDF rasterisation with correct `/Rotate` handling.~~ **Not needed.** No longer required for reading; revisit only if a UI surface needs pixels.
-- `ai` with the Vercel AI Gateway provider.
-- `AI_GATEWAY_API_KEY` — added to `.env.local` by the developer directly. **Note:** the key in use during validation was restricted to free tier, which blocked every model above `gemini-2.5-flash-lite` despite a positive credit balance. Resolve before running the evaluation lane against the production model.
+- `ai` (v7) with the Vercel AI Gateway provider, plus `zod` for the response schema. Both installed in #12.
+- `AI_GATEWAY_API_KEY` — added to `.env.local` by the developer directly. **Note:** the key in use during validation was restricted to free tier, which blocked every model above `gemini-2.5-flash-lite` despite a positive credit balance. Re-confirmed still in force on 2026-08-04; the free tier also rate-limits hard enough that three reads in a minute fail. Resolve (#27) before running the evaluation lane against the production model.
+- `AI_EXTRACTION_MODEL` — optional override for the gateway model ID. Defaults to `google/gemini-2.5-flash-lite`, which is a *constraint*, not a considered choice: it is the only model the current key can reach.
 
 ---
 
@@ -401,7 +434,13 @@ Tests assert externally observable behaviour: given a drawing file, what finding
 
 ### Note on prior art
 
-**There is currently no test infrastructure in this repository** — no test runner, no configuration, no existing test files. There is therefore no prior art to follow, and the seams below are a new proposal rather than an extension of an existing pattern. They require sign-off before implementation.
+~~**There is currently no test infrastructure in this repository** — no test runner, no configuration, no existing test files. There is therefore no prior art to follow, and the seams below are a new proposal rather than an extension of an existing pattern. They require sign-off before implementation.~~
+
+**Superseded.** Both lanes exist (#9): `npm test` → `vitest.config.mts`, and
+`npm run test:eval` → `vitest.eval.config.mts`, which excludes itself from CI by
+living behind a separate config. The seam described below is implemented in
+`src/lib/extraction/`, with the deterministic lane in `extract.test.ts` and the
+billed lane in `extract.eval.test.ts`.
 
 ### Proposed seam
 
@@ -460,10 +499,11 @@ small note text is not the bottleneck: a direct read of both sample PDFs recover
 every known line character-exact, at the cheapest model tier, in under 5 seconds.
 The two-pass design built to solve this problem has been dropped.
 
-**The largest remaining unknown is classification and abstention** — whether the
-model reliably assigns a specification to the right domain, and reliably declines
-on the hardening/quenching boundary instead of guessing. Nothing measured so far
-speaks to it. If reading regresses on a harder sheet (scanned, skewed, lower
+**Classification and abstention have now been measured once** — see *Classification
+results* above. Domain assignment was right first time on every unambiguous line;
+abstention needed a prompt fix, because the model inferred `hardening` from a
+temper code rather than from printed words. It remains the weaker half, and the
+measurement covers two sheets of one CAD style. If reading regresses on a harder sheet (scanned, skewed, lower
 resolution), the fallback ladder is: rasterise sheet 1 ourselves and send the page
 as an image, then send fixed native-resolution tiles, then split reading from
 classification across two models.
