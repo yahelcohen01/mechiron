@@ -174,6 +174,80 @@ describe('extractDrawingSpecs — model response handling', () => {
   });
 });
 
+describe('extractDrawingSpecs — heat-treatment abstention guard', () => {
+  const heatTreatLine = 'HEAT TREAT TO H1025 PER AMS-H-6875 CLASS D';
+
+  const classifiedAs = async (text: string, domain: 'hardening' | 'quenching') =>
+    (
+      await extractDrawingSpecs(drawing, emptyContext, {
+        callModel: respondWith([
+          { label: null, text, confidence: 'high', domain },
+        ]),
+      })
+    ).findings[0];
+
+  it('overrides a hardening call the printed text does not support', async () => {
+    // Observed for real: the model reads this line correctly, then infers
+    // hardening from H1025 being an age-hardening condition for 15-5PH.
+    const finding = await classifiedAs(heatTreatLine, 'hardening');
+    expect(finding.domain).toBeNull();
+    expect(finding.assignmentSource).toBeNull();
+  });
+
+  it('overrides a quenching call the printed text does not support', async () => {
+    const finding = await classifiedAs(heatTreatLine, 'quenching');
+    expect(finding.domain).toBeNull();
+  });
+
+  it('keeps hardening when the word is actually printed', async () => {
+    const finding = await classifiedAs(
+      'AGE HARDEN PER AMS 2759/3 CLASS D',
+      'hardening'
+    );
+    expect(finding.domain).toBe('hardening');
+    expect(finding.assignmentSource).toBe('auto');
+  });
+
+  it('keeps quenching on explicit quench or temper language', async () => {
+    expect((await classifiedAs('QUENCH IN OIL PER AMS 2759', 'quenching')).domain)
+      .toBe('quenching');
+    expect((await classifiedAs('TEMPER AT 300F FOR 2 HOURS', 'quenching')).domain)
+      .toBe('quenching');
+  });
+
+  it('does not second-guess the domains that have no such trap', async () => {
+    const result = await extractDrawingSpecs(drawing, emptyContext, {
+      callModel: respondWith([material]),
+    });
+    expect(result.findings[0].domain).toBe('raw_material');
+  });
+
+  it('still lets a learned mapping classify what the guard rejected', async () => {
+    // The guard creates the abstention; teaching is how the user resolves it,
+    // which is the designed route for the hardening/quenching boundary.
+    const result = await extractDrawingSpecs(
+      drawing,
+      {
+        ...emptyContext,
+        learnedMappings: [{ pattern: 'AMS-H-6875', domain: 'hardening' }],
+      },
+      {
+        callModel: respondWith([
+          {
+            label: null,
+            text: heatTreatLine,
+            confidence: 'high',
+            domain: 'hardening',
+          },
+        ]),
+      }
+    );
+
+    expect(result.findings[0].domain).toBe('hardening');
+    expect(result.findings[0].assignmentSource).toBe('learned');
+  });
+});
+
 describe('extractDrawingSpecs — learned mappings', () => {
   it('classifies a specification the model abstained on', async () => {
     const result = await extractDrawingSpecs(

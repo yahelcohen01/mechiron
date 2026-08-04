@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:eval": "vitest run --config vitest.eval.config.mts",
+    "test:eval": "node --env-file-if-exists=.env.local ./node_modules/.bin/vitest run --config vitest.eval.config.mts",
     "db:migrate": "supabase db push",
     "db:migrate:dry": "supabase db push --dry-run",
     "db:backup": "bash scripts/db-backup.sh",

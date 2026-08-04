@@ -66,6 +66,37 @@ const stripLeadingLabel = (text: string, label: string | null): string => {
   return trimmed;
 };
 
+/**
+ * The literal words that entitle a finding to a heat-treatment domain.
+ *
+ * This is enforced in code, not left to the prompt. Asked in words to classify
+ * only on printed language, the model complies on some runs and not others: it
+ * reads `HEAT TREAT TO H1025 PER AMS-H-6875` correctly, knows H1025 is an
+ * age-hardening condition for 15-5PH, and supplies the inference the drawing
+ * does not state. That is a *correct* piece of metallurgy producing exactly the
+ * misclassification the over-abstaining design exists to prevent, and no
+ * rewording reliably suppresses it.
+ *
+ * So the model's assignment is treated as a proposal and checked against the
+ * text it claims to be reading. A proposal with no anchor becomes an
+ * abstention, which the user can fix in one click — and once they do, the
+ * learned mapping carries it thereafter. That is the designed route for the
+ * hardening/quenching boundary anyway.
+ *
+ * The other three domains are unguarded: `raw_material`, `coating` and
+ * `passivation` have no comparable trap, classified correctly on every run so
+ * far, and have no short list of words that reliably appears in them.
+ */
+const DOMAIN_ANCHORS: Partial<Record<ExtractableDomain, RegExp>> = {
+  hardening: /HARDEN/,
+  quenching: /QUENCH|TEMPER/,
+};
+
+const hasAnchor = (domain: ExtractableDomain, text: string): boolean => {
+  const anchor = DOMAIN_ANCHORS[domain];
+  return anchor === undefined || anchor.test(normalise(text));
+};
+
 const findMapping = (
   text: string,
   mappings: LearnedMapping[]
@@ -111,9 +142,14 @@ export function toDrawingFindings(
     // Anything that is not a domain this feature is allowed to assign —
     // including `subcontractor`, which the schema never offers but which a
     // model can still produce — becomes an abstention rather than an error.
-    let domain: ExtractableDomain | null = isExtractableDomain(finding.domain)
+    const proposed: ExtractableDomain | null = isExtractableDomain(
+      finding.domain
+    )
       ? finding.domain
       : null;
+
+    let domain: ExtractableDomain | null =
+      proposed !== null && hasAnchor(proposed, rawText) ? proposed : null;
     let assignmentSource: DrawingFinding['assignmentSource'] =
       domain === null ? null : 'auto';
 

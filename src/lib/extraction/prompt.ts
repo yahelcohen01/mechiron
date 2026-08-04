@@ -21,6 +21,11 @@ export function buildExtractionPrompt(context: ExtractionContext): string {
 
 Return one entry per specification you find. Do not invent entries; if the drawing carries no specification callouts, return none.
 
+COMPLETENESS
+- Return every callout that names a material, a finish, a coating, a chemical treatment, or a heat, bake, or cure process — including ones you will end up marking "unknown". Return it even if it is a process instruction rather than a named standard, and even if it also states a time, temperature, or sequence.
+- Never omit a callout because you could not classify it. A specification you return and mark "unknown" is shown to the user for one click; a specification you leave out is lost silently. Omitting is the worse error.
+- Do not merge two separate callouts into one entry, and do not split one callout across two.
+
 TRANSCRIPTION
 - Transcribe the value exactly as printed, character for character, in the drawing's own language. Do not translate, expand, normalise, or tidy a standard designation.
 - Put the printed label (for example MATERIAL, FINISH) in "label", and the specification itself in "text" with the label and any trailing period removed. "MATERIAL: CRES ROD 15-5PH PER AMS 5659." yields label "MATERIAL" and text "CRES ROD 15-5PH PER AMS 5659".

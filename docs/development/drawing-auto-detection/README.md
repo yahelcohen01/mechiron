@@ -183,27 +183,54 @@ Classification was correct on first attempt for every unambiguous line —
 material, coating, and passivation each landed in the right domain on both
 sheets, and nothing was ever assigned to `subcontractor`.
 
-**Abstention was not.** On the first run the model classified
+**Abstention was not.** The model classified
 `HEAT TREAT TO H1025 PER AMS-H-6875 CLASS D` as `hardening`. It had not misread
 anything; it had reasoned correctly that H1025 is an age-hardening condition for
 15-5PH and applied that knowledge. This is precisely the failure the
 over-abstaining design exists to prevent, and it was invisible to the reading
 evaluation that preceded it.
 
-The fix was a prompt rule, not a model change: **judge only on words literally
-printed, and never infer a domain from what a standard number, class, temper
-code, or material condition designation means.** The relevant sentence is in
-`src/lib/extraction/prompt.ts`. With it, both ambiguous lines abstain.
+**Prompt wording alone did not fix it.** A rule was added instructing the model
+to judge only on words literally printed and never to infer a domain from what a
+standard number, class, or temper code means. The next run abstained correctly —
+and the run after that classified it as `hardening` again. One passing run was
+not evidence; it was a coin landing heads.
 
-The generalisable point: the model's *domain knowledge* is the adversary here,
-not its eyesight. A vision model that knows metallurgy will happily supply the
-inference the drawing does not state. Rules phrased as "only when X is
-explicit" are read as permission to establish X by reasoning; rules phrased as
-"only when the word X literally appears" are not.
+**What fixed it is a deterministic guard in code** (`DOMAIN_ANCHORS` in
+`src/lib/extraction/findings.ts`). A `hardening` or `quenching` assignment is
+treated as a *proposal* and discarded unless the word HARDEN, QUENCH, or TEMPER
+literally appears in the text the model claims to be reading. An assignment with
+no anchor becomes an abstention. The other three domains are unguarded: they
+have no comparable trap, they classified correctly on every run, and there is no
+short list of words that reliably appears in them.
+
+The generalisable points, in order of how much they cost to learn:
+
+1. **The model's domain knowledge is the adversary here, not its eyesight.** A
+   vision model that knows metallurgy will supply the inference the drawing does
+   not state. It is not misreading; it is being helpful.
+2. **A behavioural rule that must hold every time does not belong in a prompt.**
+   Prompts move probabilities. If the requirement is "never", enforce it in code
+   and let the prompt merely make the model's job easier.
+3. **One passing eval run proves nothing about a non-deterministic system.** The
+   fix that "worked" was verified by a single green run and regressed on the
+   next.
+
+A second, quieter failure appeared once the first was fixed: on some runs the
+model **omitted** the `BAKE PART AFTER PLATING …` callout entirely rather than
+returning it unclassified — silent loss, which user story 19 exists to prevent
+and which no classification assertion catches. The prompt now carries an
+explicit completeness rule: return every callout including ones you will mark
+unknown, because omitting is the worse error. Recall is worth watching as more
+fixture drawings arrive.
 
 Still unmeasured: any sheet that is scanned, skewed, multi-sheet, or from a
 different CAD system, and every classification boundary these two sheets do not
 happen to contain.
+
+**Operational note.** The free tier the key is restricted to (#27) rate-limits
+after roughly two eval runs and stays blocked for several minutes. Budget for
+that when iterating; it is not a code fault.
 
 ### Reading pipeline
 
@@ -279,6 +306,11 @@ Because the boundary between `hardening` (חיסום) and `quenching` (חישו�
 - `quenching` only on explicit quench or temper language.
 - `hardening` only on explicit harden, age, or case-harden language.
 - Abstain on anything else, **including a bare `HEAT TREAT`**.
+
+**These three rules are enforced in code, not by the prompt.** See
+*Classification results* — the model violated them intermittently when they were
+prompt-only, because it can derive the heat treatment from a temper code without
+misreading a character.
 
 The reasoning: an abstention costs the user one click, whereas a wrong classification costs an email to the wrong category of supplier. Over time, learned mappings close the gap.
 
