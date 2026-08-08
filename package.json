@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:eval": "vitest run --config vitest.eval.config.mts",
+    "test:eval": "node --env-file-if-exists=.env.local ./node_modules/.bin/vitest run --config vitest.eval.config.mts",
     "db:migrate": "supabase db push",
     "db:migrate:dry": "supabase db push --dry-run",
     "db:backup": "bash scripts/db-backup.sh",
@@ -19,12 +19,14 @@
   },
   "dependencies": {
     "@supabase/ssr": "^0.9.0",
+    "ai": "^7.0.51",
     "next": "16.1.6",
     "next-themes": "^0.4.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "resend": "^6.9.3",
-    "sonner": "^2.0.7"
+    "sonner": "^2.0.7",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

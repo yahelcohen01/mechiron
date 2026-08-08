@@ -11,6 +11,9 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    // Lets vitest.eval.config.mts import its sibling .mts config by name.
+    // Safe under noEmit: nothing here is ever compiled to JS by tsc.
+    "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [

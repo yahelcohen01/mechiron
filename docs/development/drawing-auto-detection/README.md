@@ -1,6 +1,6 @@
 # Drawing Auto-Detection
 
-Status: **specced, not built; reading half validated, design revised** · Migrations: `008`, `009` · Owner: @yahelcohen01
+Status: **extraction pipeline built (#12); reading and classification both validated on two sheets; no UI wired yet** · Migrations: `008`, `009` · Owner: @yahelcohen01
 
 > **Read *Validation results* (below) before implementing anything.** The reading
 > pipeline was tested ahead of being built and the result invalidated part of this
@@ -173,6 +173,65 @@ scanned, skewed, or multi-sheet drawings, and **nothing at all about the
 classification and abstention half of the feature**, which remains the genuinely
 unvalidated part.
 
+### Classification results — 2026-08-04 (issue #12)
+
+The first evaluation of the *classification* half, on the same two sheets and
+the same `google/gemini-2.5-flash-lite`. Reading was character-exact again on
+both sheets, including `AMS 4027` and `H1025`.
+
+Classification was correct on first attempt for every unambiguous line —
+material, coating, and passivation each landed in the right domain on both
+sheets, and nothing was ever assigned to `subcontractor`.
+
+**Abstention was not.** The model classified
+`HEAT TREAT TO H1025 PER AMS-H-6875 CLASS D` as `hardening`. It had not misread
+anything; it had reasoned correctly that H1025 is an age-hardening condition for
+15-5PH and applied that knowledge. This is precisely the failure the
+over-abstaining design exists to prevent, and it was invisible to the reading
+evaluation that preceded it.
+
+**Prompt wording alone did not fix it.** A rule was added instructing the model
+to judge only on words literally printed and never to infer a domain from what a
+standard number, class, or temper code means. The next run abstained correctly —
+and the run after that classified it as `hardening` again. One passing run was
+not evidence; it was a coin landing heads.
+
+**What fixed it is a deterministic guard in code** (`DOMAIN_ANCHORS` in
+`src/lib/extraction/findings.ts`). A `hardening` or `quenching` assignment is
+treated as a *proposal* and discarded unless the word HARDEN, QUENCH, or TEMPER
+literally appears in the text the model claims to be reading. An assignment with
+no anchor becomes an abstention. The other three domains are unguarded: they
+have no comparable trap, they classified correctly on every run, and there is no
+short list of words that reliably appears in them.
+
+The generalisable points, in order of how much they cost to learn:
+
+1. **The model's domain knowledge is the adversary here, not its eyesight.** A
+   vision model that knows metallurgy will supply the inference the drawing does
+   not state. It is not misreading; it is being helpful.
+2. **A behavioural rule that must hold every time does not belong in a prompt.**
+   Prompts move probabilities. If the requirement is "never", enforce it in code
+   and let the prompt merely make the model's job easier.
+3. **One passing eval run proves nothing about a non-deterministic system.** The
+   fix that "worked" was verified by a single green run and regressed on the
+   next.
+
+A second, quieter failure appeared once the first was fixed: on some runs the
+model **omitted** the `BAKE PART AFTER PLATING …` callout entirely rather than
+returning it unclassified — silent loss, which user story 19 exists to prevent
+and which no classification assertion catches. The prompt now carries an
+explicit completeness rule: return every callout including ones you will mark
+unknown, because omitting is the worse error. Recall is worth watching as more
+fixture drawings arrive.
+
+Still unmeasured: any sheet that is scanned, skewed, multi-sheet, or from a
+different CAD system, and every classification boundary these two sheets do not
+happen to contain.
+
+**Operational note.** The free tier the key is restricted to (#27) rate-limits
+after roughly two eval runs and stays blocked for several minutes. Budget for
+that when iterating; it is not a code fault.
+
 ### Reading pipeline
 
 **Trigger point.** Extraction fires on file-select, not on submit, so that it overlaps with the remainder of form entry. Two alternatives were considered and rejected: running it inside RFQ creation (makes creation hostage to a model call) and running it after redirect on the RFQ page (rejected by the developer in favour of the simpler single trigger point).
@@ -247,6 +306,11 @@ Because the boundary between `hardening` (חיסום) and `quenching` (חישו�
 - `quenching` only on explicit quench or temper language.
 - `hardening` only on explicit harden, age, or case-harden language.
 - Abstain on anything else, **including a bare `HEAT TREAT`**.
+
+**These three rules are enforced in code, not by the prompt.** See
+*Classification results* — the model violated them intermittently when they were
+prompt-only, because it can derive the heat treatment from a temper code without
+misreading a character.
 
 The reasoning: an abstention costs the user one click, whereas a wrong classification costs an email to the wrong category of supplier. Over time, learned mappings close the gap.
 
@@ -388,8 +452,32 @@ The developer elected to ship with `ai_extraction_enabled` defaulting to **true*
 ### New dependencies
 
 - ~~`pdfjs-dist` — PDF rasterisation with correct `/Rotate` handling.~~ **Not needed.** No longer required for reading; revisit only if a UI surface needs pixels.
-- `ai` with the Vercel AI Gateway provider.
-- `AI_GATEWAY_API_KEY` — added to `.env.local` by the developer directly. **Note:** the key in use during validation was restricted to free tier, which blocked every model above `gemini-2.5-flash-lite` despite a positive credit balance. Resolve before running the evaluation lane against the production model.
+- `ai` (v7) with the Vercel AI Gateway provider, plus `zod` for the response schema. Both installed in #12.
+- `AI_GATEWAY_API_KEY` — added to `.env.local` by the developer directly. **Note:** the key in use during validation was restricted to free tier, which blocked every model above `gemini-2.5-flash-lite` despite a positive credit balance. Re-confirmed still in force on 2026-08-04; the free tier also rate-limits hard enough that three reads in a minute fail. Resolve (#27) before running the evaluation lane against the production model.
+- `AI_EXTRACTION_MODEL` — optional override for the gateway model ID. Defaults to `google/gemini-2.5-flash-lite`, which is a *constraint*, not a considered choice: it is the only model the current key can reach.
+- `LOG_LEVEL` — application-wide, not specific to this feature. See *Observability* below.
+
+### Observability
+
+The pipeline logs through the shared application logger (`src/lib/logger.ts`),
+under the scope `drawing-extraction`. One JSON object per line:
+
+```
+LOG_LEVEL=info npm run test:eval
+[drawing-extraction] {"level":"info","event":"model.response","latencyMs":2895,"inputTokens":1967,...}
+[drawing-extraction] {"level":"info","event":"findings.summary","kept":2,"unassigned":0,"guardOverrides":0,...}
+```
+
+`guardOverrides` in `findings.summary` is the number worth watching: it counts
+the times the model proposed a heat-treatment domain the printed text did not
+support. A rising count means the prompt and the model disagree about the
+abstention rule — the failure that cost this ticket two eval cycles and which is
+otherwise invisible, because the output looks like a normal abstention.
+
+**Verbatim drawing text is logged only at `debug`.** Per the *Defense data
+disclosure* note, the content of a customer's drawing is the sensitive part;
+`info` carries lengths, domains, and decisions, which is enough to explain a
+surprising result without copying the drawing into a log aggregator.
 
 ---
 
@@ -401,7 +489,13 @@ Tests assert externally observable behaviour: given a drawing file, what finding
 
 ### Note on prior art
 
-**There is currently no test infrastructure in this repository** — no test runner, no configuration, no existing test files. There is therefore no prior art to follow, and the seams below are a new proposal rather than an extension of an existing pattern. They require sign-off before implementation.
+~~**There is currently no test infrastructure in this repository** — no test runner, no configuration, no existing test files. There is therefore no prior art to follow, and the seams below are a new proposal rather than an extension of an existing pattern. They require sign-off before implementation.~~
+
+**Superseded.** Both lanes exist (#9): `npm test` → `vitest.config.mts`, and
+`npm run test:eval` → `vitest.eval.config.mts`, which excludes itself from CI by
+living behind a separate config. The seam described below is implemented in
+`src/lib/extraction/`, with the deterministic lane in `extract.test.ts` and the
+billed lane in `extract.eval.test.ts`.
 
 ### Proposed seam
 
@@ -460,10 +554,11 @@ small note text is not the bottleneck: a direct read of both sample PDFs recover
 every known line character-exact, at the cheapest model tier, in under 5 seconds.
 The two-pass design built to solve this problem has been dropped.
 
-**The largest remaining unknown is classification and abstention** — whether the
-model reliably assigns a specification to the right domain, and reliably declines
-on the hardening/quenching boundary instead of guessing. Nothing measured so far
-speaks to it. If reading regresses on a harder sheet (scanned, skewed, lower
+**Classification and abstention have now been measured once** — see *Classification
+results* above. Domain assignment was right first time on every unambiguous line;
+abstention needed a prompt fix, because the model inferred `hardening` from a
+temper code rather than from printed words. It remains the weaker half, and the
+measurement covers two sheets of one CAD style. If reading regresses on a harder sheet (scanned, skewed, lower
 resolution), the fallback ladder is: rasterise sheet 1 ourselves and send the page
 as an image, then send fixed native-resolution tiles, then split reading from
 classification across two models.
