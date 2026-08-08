@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Select } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { formatRevision } from '@/lib/types';
+import {
+  ACCEPTED_MEDIA_TYPES,
+  MAX_UPLOAD_BYTES,
+  type CompletedExtraction,
+  type ExtractionOutcome,
+} from '@/lib/extraction-service/payload';
 import {
   getPartsForClient,
   getNextRevision,
@@ -19,8 +25,24 @@ type ClientOption = { id: string; name: string };
 type PartOption = { id: string; serial_number: string; description: string | null };
 
 const NEW_PART_VALUE = '__new__';
-const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
-const ACCEPTED_TYPES = ['application/pdf', 'image/png', 'image/jpeg'];
+
+/**
+ * Shared with the endpoint rather than restated, so the two limits cannot
+ * drift into a file the form accepts and the server refuses.
+ *
+ * Imported from `payload` and not from the module barrel: the barrel reaches
+ * `node:crypto` and the Supabase server client, neither of which belongs in a
+ * client bundle.
+ */
+const MAX_FILE_SIZE = MAX_UPLOAD_BYTES;
+const ACCEPTED_TYPES: readonly string[] = ACCEPTED_MEDIA_TYPES;
+
+/**
+ * How long submit will wait for a read that is still in flight before giving
+ * up on it and creating the RFQ anyway. From the spec; the ceiling exists so
+ * that a hung gateway can never hold a user's submit hostage.
+ */
+const EXTRACTION_SUBMIT_GRACE_MS = 15_000;
 
 type NewRfqFormProps = {
   clients: ClientOption[];
@@ -49,14 +71,38 @@ export function NewRfqForm({ clients: initialClients }: NewRfqFormProps) {
   // File
   const [fileError, setFileError] = useState('');
 
+  // Drawing extraction. Findings live here — in client state — and are not
+  // persisted anywhere until submit, which is what lets an abandoned form
+  // leave no storage object and no database row behind. #14 turns this into
+  // visible progress; today it is deliberately invisible.
+  // `extractionResult` is the ref submit reads, not the state: submit may run
+  // while a read is still in flight, and a state value captured by that
+  // render's closure would be stale by the time the read resolves. The state
+  // mirrors it for the progress UI #14 adds.
+  const [, setExtraction] = useState<CompletedExtraction | null>(null);
+  const extractionResult = useRef<CompletedExtraction | null>(null);
+  const extractionInFlight = useRef<Promise<void> | null>(null);
+  const extractionRequest = useRef<AbortController | null>(null);
+
   // Form
   const [error, setError] = useState('');
+
+  function resetExtraction() {
+    extractionRequest.current?.abort();
+    extractionRequest.current = null;
+    extractionInFlight.current = null;
+    extractionResult.current = null;
+    setExtraction(null);
+  }
 
   async function handleClientChange(newClientId: string) {
     setClientId(newClientId);
     setSelectedPartValue('');
     setRevision(null);
     setParts([]);
+    // Changing the client unmounts the file input, so the picked file is gone;
+    // findings read under the previous client's permission must go with it.
+    resetExtraction();
 
     if (!newClientId) return;
 
@@ -113,6 +159,10 @@ export function NewRfqForm({ clients: initialClients }: NewRfqFormProps) {
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     setFileError('');
+    // A new pick invalidates whatever the previous one produced, including a
+    // read still in flight for it.
+    resetExtraction();
+
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -126,6 +176,50 @@ export function NewRfqForm({ clients: initialClients }: NewRfqFormProps) {
       setFileError('גודל הקובץ חורג מ-25MB');
       e.target.value = '';
       return;
+    }
+
+    extractionInFlight.current = runExtraction(file);
+  }
+
+  /**
+   * Posts the picked file and keeps whatever comes back.
+   *
+   * Every failure path here is a no-op on purpose. Extraction may not make the
+   * form worse: a gateway outage, a disabled client, an aborted request or a
+   * network drop all leave the user exactly where they are today — filling the
+   * specification fields in by hand and submitting normally. Nothing is
+   * surfaced and nothing is thrown.
+   */
+  async function runExtraction(file: File) {
+    const controller = new AbortController();
+    extractionRequest.current = controller;
+
+    const body = new FormData();
+    body.set('drawing', file);
+    body.set('client_id', clientId);
+
+    try {
+      const response = await fetch('/api/drawings/extract', {
+        method: 'POST',
+        body,
+        signal: controller.signal,
+      });
+
+      const outcome = (await response.json()) as ExtractionOutcome;
+
+      // A file swap that landed while this was in flight owns the state now.
+      if (extractionRequest.current !== controller) return;
+
+      if (response.ok && outcome.status === 'completed') {
+        extractionResult.current = outcome;
+        setExtraction(outcome);
+      }
+    } catch {
+      // Includes the abort from a file swap. Nothing to report either way.
+    } finally {
+      if (extractionRequest.current === controller) {
+        extractionRequest.current = null;
+      }
     }
   }
 
@@ -147,6 +241,18 @@ export function NewRfqForm({ clients: initialClients }: NewRfqFormProps) {
     }
 
     startTransition(async () => {
+      // A read that is nearly done is worth a short wait — losing it would
+      // cost the user every field it was about to fill. A read that is not
+      // nearly done is not worth blocking on, so the wait is capped and
+      // expiring it simply proceeds. The button is already in its loading
+      // state throughout, so this adds no UI.
+      await waitForExtraction();
+
+      const extraction = extractionResult.current;
+      if (extraction) {
+        formData.set('extraction', JSON.stringify(extraction));
+      }
+
       const result = await createRfq(formData);
 
       if (!result.success) {
@@ -156,6 +262,16 @@ export function NewRfqForm({ clients: initialClients }: NewRfqFormProps) {
 
       router.push(`/rfq/${result.data.id}`);
     });
+  }
+
+  async function waitForExtraction() {
+    const pending = extractionInFlight.current;
+    if (!pending) return;
+
+    await Promise.race([
+      pending,
+      new Promise((resolve) => setTimeout(resolve, EXTRACTION_SUBMIT_GRACE_MS)),
+    ]);
   }
 
   const partOptions = [
