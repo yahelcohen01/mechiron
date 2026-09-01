@@ -1,6 +1,7 @@
 import { createLogger, type Logger } from '@/lib/logger';
 
 import type { CompletedExtraction } from './payload';
+import { selectPrefills, type Prefill } from './prefill';
 import { EXTRACTION_SERVICE_LOG_SCOPE } from './service';
 import type { SupabaseServerClient } from './supabase-ports';
 
@@ -27,6 +28,13 @@ export type PersistExtractionInput = {
  * account boundary does not depend on them: `account_id` is written from the
  * caller's own session, and the findings are reachable only through the
  * extraction row that carries it.
+ *
+ * It also writes the pre-filled spec values (#14). Doing it here, at creation,
+ * rather than joining findings at render is what makes a pre-filled value
+ * *real*: editable, savable, and visible to the send flow — which reads
+ * `rfq_domain_configs` — without the user having to save first. Every such
+ * value is stamped `spec_source = 'ai'`, which is what keeps an AI fill
+ * distinguishable from a typed one and therefore bulk-clearable on rollback.
  */
 export async function persistExtraction(
   supabase: SupabaseServerClient,
@@ -64,17 +72,23 @@ export async function persistExtraction(
       return;
     }
 
+    // The spec fields go in before the findings, so that `applied` records
+    // what actually landed rather than what was intended. If the config write
+    // fails, every finding is honestly marked unapplied.
+    const prefills = selectPrefills(input.extraction.findings);
+    const applied = await writePrefills(supabase, input.rfqId, prefills, log);
+
     const { error: findingsError } = await supabase
       .from('rfq_drawing_findings')
       .insert(
-        input.extraction.findings.map((finding) => ({
+        input.extraction.findings.map((finding, index) => ({
           extraction_id: extraction.id,
           label: finding.label,
           raw_text: finding.rawText,
           confidence: finding.confidence,
           domain: finding.domain,
           assignment_source: finding.assignmentSource,
-          applied: false,
+          applied: applied.has(index),
         }))
       );
 
@@ -93,6 +107,7 @@ export async function persistExtraction(
       rfqId: input.rfqId,
       extractionId: extraction.id,
       findings: input.extraction.findings.length,
+      prefilled: applied.size,
     });
   } catch (error) {
     log.error('persist.threw', {
@@ -100,4 +115,48 @@ export async function persistExtraction(
       error: error instanceof Error ? error.message : String(error),
     });
   }
+}
+
+/**
+ * Creates the domain config rows that carry the pre-filled values.
+ *
+ * Returns the indexes of the findings that actually filled a field, for the
+ * `applied` flag. An empty set on failure is not a fallback — it is the
+ * accurate answer, and #16 and #19 both rely on `applied` meaning something.
+ *
+ * A plain `insert`, not an upsert: at creation time no config row for this
+ * RFQ can exist yet, so a conflict would mean this ran somewhere it was not
+ * meant to (a re-scan, #19). Failing there is correct — an AI value must
+ * never overwrite one a user has already saved.
+ */
+async function writePrefills(
+  supabase: SupabaseServerClient,
+  rfqId: string,
+  prefills: Prefill[],
+  log: Logger
+): Promise<Set<number>> {
+  if (prefills.length === 0) return new Set();
+
+  const { error } = await supabase.from('rfq_domain_configs').insert(
+    prefills.map((prefill) => ({
+      rfq_id: rfqId,
+      domain: prefill.domain,
+      spec_value: prefill.specValue,
+      spec_source: 'ai',
+    }))
+  );
+
+  if (error) {
+    // Includes the case where 009 was rolled back and `spec_source` is gone.
+    // The RFQ still exists with empty domains, which is the pre-#14 behaviour.
+    log.warn('persist.prefill.failed', { rfqId, error: error.message });
+    return new Set();
+  }
+
+  log.info('persist.prefill.complete', {
+    rfqId,
+    domains: prefills.map((p) => p.domain),
+  });
+
+  return new Set(prefills.map((p) => p.findingIndex));
 }

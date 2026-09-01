@@ -73,12 +73,13 @@ export function NewRfqForm({ clients: initialClients }: NewRfqFormProps) {
 
   // Drawing extraction. Findings live here — in client state — and are not
   // persisted anywhere until submit, which is what lets an abandoned form
-  // leave no storage object and no database row behind. #14 turns this into
-  // visible progress; today it is deliberately invisible.
+  // leave no storage object and no database row behind. #15 turns this into
+  // visible progress; today it is deliberately invisible. (#14 is the
+  // pre-fill, which happens server-side once these findings are persisted.)
   // `extractionResult` is the ref submit reads, not the state: submit may run
   // while a read is still in flight, and a state value captured by that
   // render's closure would be stale by the time the read resolves. The state
-  // mirrors it for the progress UI #14 adds.
+  // mirrors it for the progress UI #15 adds.
   const [, setExtraction] = useState<CompletedExtraction | null>(null);
   const extractionResult = useRef<CompletedExtraction | null>(null);
   const extractionInFlight = useRef<Promise<void> | null>(null);

@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { createLogger } from '@/lib/logger';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { getAccountId } from '@/lib/supabase/account';
 import { resend } from '@/lib/resend';
@@ -42,6 +43,8 @@ export type DomainSupplierItem = {
   is_approved: boolean;
 };
 
+export type SpecSource = 'ai' | 'user';
+
 export type DomainSectionData = {
   domain: RfqDomain;
   config: {
@@ -49,7 +52,16 @@ export type DomainSectionData = {
     email_subject: string;
     email_body_text: string;
     spec_value: string | null;
+    /** Null for values that predate extraction, or were never written by it. */
+    spec_source: SpecSource | null;
   };
+  /**
+   * The line as printed on the drawing that produced an AI-filled value — the
+   * evidence behind the marker, so the value can be checked without opening
+   * the PDF. Null whenever there is nothing to show, including when the
+   * extraction tables are gone.
+   */
+  ai_source_text: string | null;
   approved_suppliers: DomainSupplierItem[];
   available_non_approved: Supplier[];
 };
@@ -68,7 +80,7 @@ export async function getRfqPageData(rfqId: string): Promise<ActionResult<RfqPag
     const supabase = await createSupabaseClient();
 
     // Parallel queries
-    const [rfqResult, configsResult, requestsResult, accountResult, allSuppliersResult] =
+    const [rfqResult, configsResult, requestsResult, accountResult, allSuppliersResult, appliedFindingsResult] =
       await Promise.all([
         // 1. RFQ with joins
         supabase
@@ -113,6 +125,19 @@ export async function getRfqPageData(rfqId: string): Promise<ActionResult<RfqPag
           .select('*')
           .eq('account_id', accountId)
           .order('name'),
+
+        // 6. The drawing lines behind any AI-filled spec values.
+        //
+        // Alone among these queries an error here is NOT fatal — see where the
+        // result is read. Scoped by account as well as by RFQ: RLS already
+        // enforces it, but this runs in parallel with the ownership check
+        // above rather than after it.
+        supabase
+          .from('rfq_drawing_findings')
+          .select('label, raw_text, domain, rfq_drawing_extractions!inner(rfq_id, account_id)')
+          .eq('applied', true)
+          .eq('rfq_drawing_extractions.rfq_id', rfqId)
+          .eq('rfq_drawing_extractions.account_id', accountId),
       ]);
 
     if (rfqResult.error) return { success: false, error: rfqResult.error.message };
@@ -156,6 +181,27 @@ export async function getRfqPageData(rfqId: string): Promise<ActionResult<RfqPag
       .eq('client_id', rfqDetail.client_id);
 
     const approvedSupplierIds = new Set((approvalsData ?? []).map((a) => a.supplier_id));
+
+    // The degradation requirement, in one branch: if `008` was rolled back
+    // under a running deployment, or the tables are simply empty, this page
+    // renders exactly as it did before extraction existed. An unreadable
+    // findings table costs a hover tooltip, never the RFQ page — which is what
+    // makes the schema rollback safe to perform independently of the code one.
+    if (appliedFindingsResult.error) {
+      createLogger({ scope: 'rfq-page' }).warn('findings.unreadable', {
+        rfqId,
+        error: appliedFindingsResult.error.message,
+      });
+    }
+
+    const aiSourceTextByDomain = new Map<string, string>();
+    for (const row of appliedFindingsResult.data ?? []) {
+      if (!row.domain || aiSourceTextByDomain.has(row.domain)) continue;
+      aiSourceTextByDomain.set(
+        row.domain,
+        row.label ? `${row.label}: ${row.raw_text}` : row.raw_text
+      );
+    }
 
     const configs = configsResult.data ?? [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -214,7 +260,9 @@ export async function getRfqPageData(rfqId: string): Promise<ActionResult<RfqPag
           email_subject: config?.email_subject ?? defaultSubject(rfqDetail.serial_number, rfqDetail.revision_number, domain),
           email_body_text: config?.email_body_text ?? defaultEmailBody,
           spec_value: config?.spec_value ?? null,
+          spec_source: (config?.spec_source as SpecSource | null) ?? null,
         },
+        ai_source_text: aiSourceTextByDomain.get(domain) ?? null,
         approved_suppliers: [...approvedInDomain, ...nonApprovedAdded],
         available_non_approved: availableNonApproved,
       };
@@ -238,7 +286,19 @@ export async function getRfqPageData(rfqId: string): Promise<ActionResult<RfqPag
 export async function saveDomainConfig(
   rfqId: string,
   domain: RfqDomain,
-  data: { quantity_override: number | null; email_subject: string; email_body_text: string; spec_value: string | null }
+  data: {
+    quantity_override: number | null;
+    email_subject: string;
+    email_body_text: string;
+    spec_value: string | null;
+    /**
+     * Passed through from the section rather than recomputed here: only the
+     * client knows whether the user touched the field. Saving an AI value
+     * unchanged sends `'ai'` back and preserves the marking; editing it sends
+     * `'user'`, which clears the marking for good.
+     */
+    spec_source: SpecSource | null;
+  }
 ): Promise<ActionResult> {
   try {
     const accountId = await getAccountId();
@@ -254,27 +314,51 @@ export async function saveDomainConfig(
 
     if (rfqError || !rfq) return { success: false, error: 'בקשה לא נמצאה' };
 
+    const row = {
+      rfq_id: rfqId,
+      domain,
+      quantity_override: data.quantity_override,
+      email_subject: data.email_subject,
+      email_body_text: data.email_body_text,
+      spec_value: data.spec_value,
+    };
+
     const { error } = await supabase
       .from('rfq_domain_configs')
-      .upsert(
-        {
-          rfq_id: rfqId,
-          domain,
-          quantity_override: data.quantity_override,
-          email_subject: data.email_subject,
-          email_body_text: data.email_body_text,
-          spec_value: data.spec_value,
-        },
-        { onConflict: 'rfq_id,domain' }
-      );
+      .upsert({ ...row, spec_source: data.spec_source }, { onConflict: 'rfq_id,domain' });
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      // `spec_source` arrived with 009, and 009 is designed to come off before
+      // 008 does. Without this branch a rollback of that one column would stop
+      // every domain config from saving at all — breaking a feature that
+      // predates extraction, to protect a marking. The value the user typed
+      // matters more than the marking on it, so the marking is what is
+      // dropped.
+      if (!isUnknownColumn(error)) return { success: false, error: error.message };
+
+      createLogger({ scope: 'rfq-page' }).warn('spec_source.unwritable', { rfqId, domain });
+
+      const { error: retryError } = await supabase
+        .from('rfq_domain_configs')
+        .upsert(row, { onConflict: 'rfq_id,domain' });
+
+      if (retryError) return { success: false, error: retryError.message };
+    }
 
     revalidatePath(`/rfq/${rfqId}`);
     return { success: true, data: undefined };
   } catch (e) {
     return { success: false, error: (e as Error).message };
   }
+}
+
+/**
+ * Distinguishes "that column is not there" from every other write failure.
+ * `PGRST204` is PostgREST's own schema-cache miss; `42703` is Postgres's
+ * undefined_column. Anything else is a real error and must still surface.
+ */
+function isUnknownColumn(error: { code?: string | null; message: string }): boolean {
+  return error.code === 'PGRST204' || error.code === '42703';
 }
 
 // --- Spec value suggestions ---

@@ -17,6 +17,7 @@ import {
   sendDomainEmails,
   getSpecSuggestions,
   type DomainSectionData,
+  type SpecSource,
 } from './actions';
 
 type DomainSectionProps = {
@@ -27,7 +28,8 @@ type DomainSectionProps = {
 
 export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps) {
   const router = useRouter();
-  const { domain, config, approved_suppliers, available_non_approved } = data;
+  const { domain, config, ai_source_text, approved_suppliers, available_non_approved } = data;
+  const specInputId = `spec-${domain}`;
 
   const [isOpen, setIsOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -39,6 +41,11 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
   const [emailSubject, setEmailSubject] = useState(config.email_subject);
   const [emailBodyText, setEmailBodyText] = useState(config.email_body_text);
   const [specValue, setSpecValue] = useState(config.spec_value ?? '');
+  // Seeded from the row, then owned by the client: only here is it known
+  // whether the user has touched the field since the page loaded.
+  const [specSource, setSpecSource] = useState<SpecSource | null>(config.spec_source);
+
+  const isAiFilled = specSource === 'ai';
 
   // Autocomplete state
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -96,14 +103,30 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
     }
   }, [domain]);
 
+  /**
+   * Editing is what clears the AI marking — not saving.
+   *
+   * The distinction is the point: a user who reads an AI-filled value, agrees
+   * with it and hits save has reviewed nothing the system can verify, so the
+   * value stays marked. Touching the field is the only act that proves a human
+   * decided the contents. A value that was never AI-filled stays unmarked
+   * rather than becoming `'user'`, which keeps `'user'` meaning specifically
+   * "a human overrode an AI reading".
+   */
+  function clearAiMarking() {
+    setSpecSource((current) => (current === 'ai' ? 'user' : current));
+  }
+
   function handleSpecChange(value: string) {
     setSpecValue(value);
+    clearAiMarking();
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => fetchSuggestions(value), 300);
   }
 
   function handleSelectSuggestion(value: string) {
     setSpecValue(value);
+    clearAiMarking();
     setShowSuggestions(false);
   }
 
@@ -116,6 +139,7 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
         email_subject: emailSubject,
         email_body_text: emailBodyText,
         spec_value: specValue.trim() || null,
+        spec_source: specSource,
       });
       if (result.success) {
         setConfigSaved(true);
@@ -138,6 +162,7 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
         email_subject: emailSubject,
         email_body_text: emailBodyText,
         spec_value: specValue.trim() || null,
+        spec_source: specSource,
       });
       const result = await sendDomainEmails(rfqId, domain);
       if (result.success) {
@@ -190,7 +215,17 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
             {DOMAIN_LABELS_HE[domain]}
           </span>
           {specValue && (
-            <span className="text-xs text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 px-2 py-0.5 rounded border border-gray-200 dark:border-gray-600">
+            <span
+              className={`text-xs px-2 py-0.5 rounded border inline-flex items-center gap-1 ${
+                isAiFilled
+                  ? 'text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/40 border-violet-300 dark:border-violet-700'
+                  : 'text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+              }`}
+            >
+              {/* The section is collapsed by default, so for most values this
+                  chip is the only thing the user ever sees. It has to carry
+                  the marking too, or the marking is invisible. */}
+              {isAiFilled && <SparkleIcon className="w-3 h-3 shrink-0" />}
               {specValue}
             </span>
           )}
@@ -219,13 +254,30 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
 
             {/* Spec value with autocomplete */}
             <div className="relative">
+              {/* The label is rendered here rather than via Input's `label`
+                  prop so the AI marker can sit beside it. The marker belongs
+                  next to the label, not inside the field: overlaying the input
+                  would collide with the autocomplete dropdown. */}
+              <div className="flex items-center gap-1.5 mb-1">
+                <label
+                  htmlFor={specInputId}
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  {SPEC_LABELS_HE[domain]}
+                </label>
+                {isAiFilled && <AiMarker sourceText={ai_source_text} />}
+              </div>
               <Input
                 ref={specInputRef}
-                label={SPEC_LABELS_HE[domain]}
+                id={specInputId}
                 value={specValue}
                 onChange={(e) => handleSpecChange(e.target.value)}
                 onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
                 placeholder={`הזן ${SPEC_LABELS_HE[domain]}`}
+                // A ring rather than a border colour: Input already owns its
+                // border class, and two competing Tailwind border utilities
+                // resolve by stylesheet order, not by which is written last.
+                className={isAiFilled ? 'ring-2 ring-violet-400/70 dark:ring-violet-500/60' : ''}
               />
               {showSuggestions && suggestions.length > 0 && (
                 <div
@@ -363,5 +415,62 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
         onCreateNew={handleCreateNew}
       />
     </div>
+  );
+}
+
+function SparkleIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 2l1.9 5.7L19.6 9.6l-5.7 1.9L12 17.2l-1.9-5.7L4.4 9.6l5.7-1.9L12 2z" />
+      <path d="M18.5 14.5l.8 2.4 2.4.8-2.4.8-.8 2.4-.8-2.4-2.4-.8 2.4-.8.8-2.4z" />
+    </svg>
+  );
+}
+
+/**
+ * The AI marking, and the evidence behind it.
+ *
+ * The tooltip shows the line **as printed on the drawing** — the label and the
+ * text the model actually read — not the value echoed back. A value repeated
+ * to the user is not evidence for itself; the point is that the line can be
+ * checked against the sheet without opening the PDF.
+ *
+ * Focusable, and opening on focus as well as hover, because a marker whose
+ * entire content is only reachable with a pointer is not reachable at all for
+ * a keyboard user.
+ */
+function AiMarker({ sourceText }: { sourceText: string | null }) {
+  return (
+    <span
+      className="group relative inline-flex"
+      tabIndex={0}
+      aria-label={
+        sourceText
+          ? `מולא אוטומטית מהשרטוט: ${sourceText}`
+          : 'מולא אוטומטית מהשרטוט'
+      }
+    >
+      <SparkleIcon className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400 cursor-help" />
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute top-full start-0 z-20 mt-1 hidden w-max max-w-xs whitespace-normal rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-start shadow-lg group-hover:block group-focus:block"
+      >
+        <span className="block text-xs font-medium text-violet-600 dark:text-violet-400">
+          מולא אוטומטית מהשרטוט
+        </span>
+        {sourceText ? (
+          <span className="mt-1 block font-mono text-xs text-gray-700 dark:text-gray-200">
+            {sourceText}
+          </span>
+        ) : (
+          // The findings are gone but the value and its marking survive: 008
+          // was rolled back, or the row was deleted. Say so rather than
+          // implying the value has evidence behind it.
+          <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">
+            מקור הקריאה אינו זמין עוד
+          </span>
+        )}
+      </span>
+    </span>
   );
 }
