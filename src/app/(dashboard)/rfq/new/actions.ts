@@ -3,6 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { createClient as createSupabaseClient } from '@/lib/supabase/server';
 import { getAccountId } from '@/lib/supabase/account';
+import {
+  parseCompletedExtraction,
+  persistExtraction,
+} from '@/lib/extraction-service';
 import type { ActionResult } from '@/lib/types/actions';
 
 type ClientOption = { id: string; name: string };
@@ -176,6 +180,21 @@ export async function createRfq(formData: FormData): Promise<ActionResult<{ id: 
       .single();
 
     if (rfqError) return { success: false, error: rfqError.message };
+
+    // Persist the drawing extraction, if the browser read one at file-select.
+    //
+    // This is where the findings become durable: extraction ran before the RFQ
+    // existed, so this is the first moment there is an `rfq_id` to attach them
+    // to. `persistExtraction` never throws and never reports failure — nothing
+    // about extraction may make RFQ creation fail or roll back.
+    const extraction = parseCompletedExtraction(formData.get('extraction'));
+    if (extraction) {
+      await persistExtraction(supabase, {
+        accountId,
+        rfqId: rfq.id,
+        extraction,
+      });
+    }
 
     // Upload drawing if provided
     if (drawingFile && drawingFile.size > 0) {
