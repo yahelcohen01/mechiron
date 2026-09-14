@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Modal } from '@/components/ui/modal';
 import { DOMAIN_LABELS_HE, SPEC_LABELS_HE } from '@/lib/types';
 import { SupplierRow } from './supplier-row';
 import { AddSupplierModal } from './add-supplier-modal';
@@ -33,6 +34,7 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
 
   const [isOpen, setIsOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showSendConfirm, setShowSendConfirm] = useState(false);
 
   // Config form state
   const [quantityOverride, setQuantityOverride] = useState(
@@ -152,7 +154,37 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
     });
   }
 
-  function handleSend() {
+  /**
+   * The send gate.
+   *
+   * An AI value the user never touched is the one case where a click on send
+   * is not yet consent: the email is the only thing this feature does that
+   * cannot be recalled. Everything else in the trust surface exists to make
+   * the user look before this moment.
+   *
+   * The gate deliberately sits *before* `performSend`, which auto-saves. A
+   * cancelled confirmation must leave the domain exactly as it was found, and
+   * a confirmation raised after the save would already have written.
+   *
+   * This is a client-side check, and so bypassable by anyone driving the
+   * action directly. That is accepted: it is a safeguard against a human not
+   * looking, not a security boundary. The value it protects is one the same
+   * user typed or accepted anyway.
+   */
+  function handleSendClick() {
+    if (isAiFilled) {
+      setShowSendConfirm(true);
+      return;
+    }
+    performSend();
+  }
+
+  function handleConfirmSend() {
+    setShowSendConfirm(false);
+    performSend();
+  }
+
+  function performSend() {
     setError('');
     setSendResult(null);
     // Auto-save config before sending
@@ -170,6 +202,30 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
         toast.success(`נשלחו ${result.data.sent} אימיילים בהצלחה`);
         if (result.data.failed.length > 0) {
           toast.error(`שליחה נכשלה ל: ${result.data.failed.join(', ')}`);
+        }
+        /**
+         * A sent email is the review.
+         *
+         * One write settles two things: the domain stops prompting, and the
+         * sparkle goes away — which is what the spec means by the marking
+         * lasting "until the user edits the field **or sends the domain**".
+         * No separate record of "already confirmed" has to exist.
+         *
+         * `sent > 0` rather than an empty `failed`: once any supplier holds
+         * the value, re-prompting on a retry asks the user to re-approve
+         * something they can no longer take back — exactly the reflexive
+         * click-through the confirmation exists to avoid. A send where every
+         * recipient failed changed nothing outward, so the marking stands.
+         */
+        if (isAiFilled && result.data.sent > 0) {
+          clearAiMarking();
+          await saveDomainConfig(rfqId, domain, {
+            quantity_override: quantityOverride ? parseInt(quantityOverride, 10) : null,
+            email_subject: emailSubject,
+            email_body_text: emailBodyText,
+            spec_value: specValue.trim() || null,
+            spec_source: 'user',
+          });
         }
         router.refresh();
       } else {
@@ -380,7 +436,7 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
               )}
               <Button
                 type="button"
-                onClick={handleSend}
+                onClick={handleSendClick}
                 disabled={isSending || !canSend}
               >
                 {isSending
@@ -404,6 +460,69 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
           {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         </div>
       )}
+
+      {/* Unreviewed-AI send confirmation */}
+      <Modal
+        open={showSendConfirm}
+        onClose={() => setShowSendConfirm(false)}
+        title="שליחה עם ערך שמולא אוטומטית"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            השדה &quot;{SPEC_LABELS_HE[domain]}&quot; מולא אוטומטית מהשרטוט ולא נערך.
+            אימיילים שנשלחו לספקים אינם ניתנים לביטול.
+          </p>
+
+          {/* The value beside the line it was read from — the same evidence the
+              marker's tooltip shows, put in front of the user at the moment it
+              actually matters, so confirming does not require going back to
+              hunt for it. */}
+          <div className="flex flex-col gap-2 rounded-lg border border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-950/40 p-3">
+            <div className="flex items-center gap-1.5">
+              <SparkleIcon className="w-3.5 h-3.5 shrink-0 text-violet-500 dark:text-violet-400" />
+              <span className="text-xs font-medium text-violet-700 dark:text-violet-300">
+                {SPEC_LABELS_HE[domain]}
+              </span>
+            </div>
+            <span className="font-mono text-sm text-gray-900 dark:text-gray-100 break-words">
+              {specValue}
+            </span>
+            {ai_source_text ? (
+              <div className="border-t border-violet-200 dark:border-violet-800 pt-2">
+                <span className="block text-xs text-gray-500 dark:text-gray-400">
+                  השורה בשרטוט:
+                </span>
+                <span className="mt-0.5 block font-mono text-xs text-gray-700 dark:text-gray-200 break-words">
+                  {ai_source_text}
+                </span>
+              </div>
+            ) : (
+              <div className="border-t border-violet-200 dark:border-violet-800 pt-2">
+                <span className="block text-xs text-gray-500 dark:text-gray-400">
+                  מקור הקריאה אינו זמין עוד
+                </span>
+              </div>
+            )}
+          </div>
+
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            לשלוח ל-{pendingCount} ספקים?
+          </p>
+
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setShowSendConfirm(false)}
+            >
+              ביטול
+            </Button>
+            <Button type="button" onClick={handleConfirmSend}>
+              אישור ושליחה
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Add supplier modal */}
       <AddSupplierModal
