@@ -185,8 +185,21 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
     router.refresh();
   }
 
+  /**
+   * Unlike the add handlers above, this reports failure instead of throwing.
+   *
+   * SupplierRow calls this inside a transition without awaiting it, so a throw
+   * here becomes an unhandled rejection the user never sees — which is how the
+   * silent-delete bug (#35) stayed invisible: the action reported success, the
+   * row stayed, and nothing anywhere said otherwise.
+   */
   async function handleRemoveSupplier(requestId: string) {
-    await removeSupplierFromRfq(requestId, rfqId);
+    const result = await removeSupplierFromRfq(requestId, rfqId);
+    if (!result.success) {
+      setError(result.error);
+      toast.error(result.error);
+      return;
+    }
     router.refresh();
   }
 
