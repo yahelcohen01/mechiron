@@ -461,14 +461,30 @@ export async function removeSupplierFromRfq(requestId: string, rfqId: string): P
 
     if (rfqError || !rfq) return { success: false, error: 'בקשה לא נמצאה' };
 
-    // Only delete if status is pending
-    const { error } = await supabase
+    /**
+     * `.select()` on the delete so the row count comes back.
+     *
+     * A delete that no RLS policy permits is not an error in Postgres — it
+     * matches zero rows and PostgREST reports success. That is exactly how #35
+     * hid: `rfq_requests` had RLS enabled by `007` but no DELETE policy until
+     * `011`, so every removal silently did nothing while returning 200.
+     *
+     * Checking the returned rows turns that class of failure into something the
+     * caller can see, whatever its cause — a missing policy, a row already
+     * gone, or a status that is no longer `pending`.
+     */
+    const { data: deleted, error } = await supabase
       .from('rfq_requests')
       .delete()
       .eq('id', requestId)
-      .eq('status', 'pending');
+      .eq('status', 'pending')
+      .select('id');
 
     if (error) return { success: false, error: error.message };
+
+    if (!deleted || deleted.length === 0) {
+      return { success: false, error: 'לא ניתן להסיר ספק זה' };
+    }
 
     revalidatePath(`/rfq/${rfqId}`);
     return { success: true, data: undefined };
