@@ -25,9 +25,28 @@ const modelResponseSchema = z.object({
 
 export type ModelFinding = z.infer<typeof modelFindingSchema>;
 
+/**
+ * How much internal reasoning the model may spend before answering.
+ *
+ * Portable across providers via the AI SDK's top-level `reasoning` parameter,
+ * which is why this is a plain union and not a Google-specific
+ * `thinkingConfig`: the model ID is configuration here, so the knob that
+ * controls its cost has to survive a change of provider.
+ */
+export type ReasoningEffort =
+  | 'provider-default'
+  | 'none'
+  | 'minimal'
+  | 'low'
+  | 'medium'
+  | 'high'
+  | 'xhigh';
+
 export type ModelRequest = {
   model: string;
   prompt: string;
+  /** Omitted leaves the provider's own default untouched. */
+  reasoning?: ReasoningEffort;
   file: Required<Pick<DrawingFile, 'bytes' | 'mediaType'>> &
     Pick<DrawingFile, 'filename'>;
 };
@@ -64,6 +83,10 @@ export async function callGatewayModel(
   const { output, response, usage, finishReason } = await generateText({
     model: request.model,
     output: Output.object({ schema: modelResponseSchema }),
+    // Spread rather than passed as `undefined`: omitting the key entirely is
+    // what leaves the provider default alone, and a reasoning model billed at
+    // its default budget was measured at 16-52 s on a single drawing.
+    ...(request.reasoning ? { reasoning: request.reasoning } : {}),
     messages: [
       {
         role: 'user',

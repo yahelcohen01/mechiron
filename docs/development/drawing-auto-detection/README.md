@@ -173,6 +173,61 @@ scanned, skewed, or multi-sheet drawings, and **nothing at all about the
 classification and abstention half of the feature**, which remains the genuinely
 unvalidated part.
 
+> ~~**All six known specification lines came back character-exact** … on
+> `google/gemini-2.5-flash-lite`~~ **Superseded — see *Model selection* below.**
+> That result held only for `LABEL: value` callouts. Re-run twice on 2026-09-17,
+> `flash-lite` split the sentence-shaped note
+> `BAKE PART AFTER PLATING WITHIN 3 HOURS PER ASTM B850 CLASS ER-9` into a label
+> `BAKE` plus a spec value beginning "PART AFTER PLATING", and returned a
+> different finding count on each run. Reading was never solved at the cheapest
+> tier; it was only ever measured on the easy shape. This is the second time a
+> single run of this lane produced a belief that two runs destroyed.
+
+### Model selection — 2026-09-17 (issue #27)
+
+The gateway key was unrestricted (credits added), which finally allowed the
+comparison #27 existed to make. Five models answered a trivial probe:
+`gemini-2.5-flash-lite`, `gemini-3-flash`, `gemini-2.5-pro`,
+`gemini-3.1-pro-preview` and `anthropic/claude-sonnet-4-5`.
+
+Each candidate below was run through the evaluation lane **twice**, both sheets,
+8 assertions per run:
+
+| configuration | result | stability | latency | output tokens |
+|---|---|---|---|---|
+| `gemini-2.5-flash-lite` | **7/8 — failed** | different findings each run | 2.5–3.9 s | 144–293 |
+| `gemini-3-flash`, provider-default reasoning | 8/8 | byte-identical | **16–52 s** | 1974–6397 |
+| `gemini-3-flash`, `reasoning: 'low'` | 8/8 | byte-identical | 2.5–3.6 s | **92–138** |
+
+**Shipping choice: `google/gemini-3-flash` with `reasoning: 'low'`**, both now
+defaults in `extract.ts`. This replaces `google/gemini-3-pro`, which is not a
+valid gateway model ID.
+
+Three things this measured that nothing had:
+
+- **Classification and abstention are now validated against the shipping
+  model.** Both abstentions held on every run — including
+  `HEAT TREAT TO H1025 PER AMS-H-6875 CLASS D`, the line that defeated
+  `flash-lite` in the 2026-08-04 run below. Nothing was ever assigned to
+  `subcontractor`.
+- **The default thinking budget was pure waste.** It produced *identical*
+  findings for 46x the output tokens and up to 52 s instead of 3 s. The latency
+  problem this feature appeared to have was a configuration default, not a
+  property of the model.
+- **`flash-lite`'s cost advantage was illusory.** It is 1.4 s faster at the cost
+  of mangling spec values — the exact harm the trust surface exists to prevent.
+
+`gemini-3.1-pro-preview` is reachable but rejected: preview status, slowest of
+the candidates (6.7 s on a five-token probe), and it returned an empty response
+to that probe.
+
+**Scope.** Still two drawings, same CAD system, same language. Two runs per
+configuration is enough to catch the instability that one run hid — it is not
+enough to call the model reliable on scanned, skewed, or multi-sheet sheets.
+One outlier run took 12 s on sample 1 with only 92 output tokens, so the
+progress panel (#15) must tolerate an occasional slow read rather than assuming
+3 s.
+
 ### Classification results — 2026-08-04 (issue #12)
 
 The first evaluation of the *classification* half, on the same two sheets and
@@ -453,8 +508,9 @@ The developer elected to ship with `ai_extraction_enabled` defaulting to **true*
 
 - ~~`pdfjs-dist` — PDF rasterisation with correct `/Rotate` handling.~~ **Not needed.** No longer required for reading; revisit only if a UI surface needs pixels.
 - `ai` (v7) with the Vercel AI Gateway provider, plus `zod` for the response schema. Both installed in #12.
-- `AI_GATEWAY_API_KEY` — added to `.env.local` by the developer directly. **Note:** the key in use during validation was restricted to free tier, which blocked every model above `gemini-2.5-flash-lite` despite a positive credit balance. Re-confirmed still in force on 2026-08-04; the free tier also rate-limits hard enough that three reads in a minute fail. Resolve (#27) before running the evaluation lane against the production model.
-- `AI_EXTRACTION_MODEL` — optional override for the gateway model ID. Defaults to `google/gemini-2.5-flash-lite`, which is a *constraint*, not a considered choice: it is the only model the current key can reach.
+- `AI_GATEWAY_API_KEY` — added to `.env.local` by the developer directly. The free-tier restriction described here through 2026-08-04 was **resolved on 2026-09-17**; every candidate model is now reachable. ~~Resolve (#27) before running the evaluation lane against the production model.~~
+- `AI_EXTRACTION_MODEL` — optional override for the gateway model ID. Defaults to `google/gemini-3-flash`, now a *considered choice* — see *Model selection — 2026-09-17*.
+- `AI_EXTRACTION_REASONING` — optional override for the reasoning budget: `provider-default`, `none`, `minimal`, `low`, `medium`, `high`, `xhigh`. Defaults to `low`. An unrecognised value falls back to that default rather than erroring. **Raising it costs 46x the output tokens for identical findings** — do not, without re-running the evaluation lane twice at both values.
 - `LOG_LEVEL` — application-wide, not specific to this feature. See *Observability* below.
 
 ### Observability
