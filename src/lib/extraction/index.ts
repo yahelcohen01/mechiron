@@ -8,12 +8,20 @@
  */
 export {
   DEFAULT_EXTRACTION_MODEL,
+  DEFAULT_EXTRACTION_REASONING,
   EXTRACTION_LOG_SCOPE,
   extractDrawingSpecs,
+  resolveExtractionModel,
+  resolveExtractionReasoning,
   type ExtractOptions,
   type ModelCall,
 } from './extract';
-export type { ModelFinding, ModelRequest, ModelResponse } from './model';
+export type {
+  ModelFinding,
+  ModelRequest,
+  ModelResponse,
+  ReasoningEffort,
+} from './model';
 export {
   EXTRACTABLE_DOMAINS,
   type AssignmentSource,

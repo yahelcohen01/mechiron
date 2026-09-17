@@ -4,8 +4,9 @@ import path from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
-  DEFAULT_EXTRACTION_MODEL,
   extractDrawingSpecs,
+  resolveExtractionModel,
+  resolveExtractionReasoning,
   type DrawingFinding,
   type ExtractionContext,
 } from '@/lib/extraction';
@@ -33,6 +34,15 @@ import {
  * lane against the shipping model once that is resolved.
  */
 
+/**
+ * Named in the suite titles so a run records what it actually exercised.
+ * The reasoning budget belongs in the title next to the model: the same model
+ * at two budgets is two different results, and a latency number recorded
+ * without it cannot be reproduced.
+ */
+const REASONING = resolveExtractionReasoning();
+const MODEL = `${resolveExtractionModel()} · reasoning=${REASONING}`;
+
 const context: ExtractionContext = {
   learnedMappings: [],
   existingVocabulary: [],
@@ -54,7 +64,7 @@ const findByText = (findings: DrawingFinding[], needle: string) =>
     finding.rawText.toUpperCase().includes(needle.toUpperCase())
   );
 
-describe(`sample 1 — ${DEFAULT_EXTRACTION_MODEL}`, () => {
+describe(`sample 1 — ${MODEL}`, () => {
   let findings: DrawingFinding[];
 
   beforeAll(async () => {
@@ -82,7 +92,7 @@ describe(`sample 1 — ${DEFAULT_EXTRACTION_MODEL}`, () => {
   });
 });
 
-describe(`sample 2 — ${DEFAULT_EXTRACTION_MODEL}`, () => {
+describe(`sample 2 — ${MODEL}`, () => {
   let findings: DrawingFinding[];
 
   beforeAll(async () => {
