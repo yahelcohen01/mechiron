@@ -1,0 +1,33 @@
+-- 009_ai_extraction_columns.down.sql  (ROLLBACK — apply manually, NOT via db push)
+--
+-- Reverts 009_ai_extraction_columns.sql by dropping the two added columns.
+--
+--   psql "$DB_URL" -f supabase/rollback/009_ai_extraction_columns.down.sql
+--
+-- RUN THIS BEFORE 008's down file. 009 comes off first so that nothing
+-- references a dropped object mid-way.
+--
+-- BEFORE YOU RUN THIS, CONSIDER THE MUCH CHEAPER OPTION. If the problem is
+-- the feature misbehaving rather than the schema itself, the kill switch is
+-- instant, needs no deploy, and loses nothing:
+--
+--   UPDATE clients SET ai_extraction_enabled = false;
+--
+-- Dropping these columns is only warranted when you are removing the feature
+-- outright.
+--
+-- WHAT YOU LOSE: dropping spec_source discards the record of which spec values
+-- an AI wrote. If you intend to clear those values, do it BEFORE dropping the
+-- column — afterwards there is no way to tell them apart from hand-typed ones:
+--
+--   UPDATE rfq_domain_configs SET spec_value = NULL WHERE spec_source = 'ai';
+--
+-- Note this does NOT unsend any email already sent to a supplier. That is
+-- irreversible and is why the unreviewed-AI send confirmation exists.
+--
+-- After running this, also delete the migration row so a future `supabase db
+-- push` can re-apply the (corrected) forward migration:
+--   DELETE FROM supabase_migrations.schema_migrations WHERE version = '009';
+
+ALTER TABLE rfq_domain_configs DROP COLUMN IF EXISTS spec_source;
+ALTER TABLE clients            DROP COLUMN IF EXISTS ai_extraction_enabled;

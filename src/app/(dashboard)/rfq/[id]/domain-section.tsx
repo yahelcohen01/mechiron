@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Modal } from '@/components/ui/modal';
 import { DOMAIN_LABELS_HE, SPEC_LABELS_HE } from '@/lib/types';
 import { SupplierRow } from './supplier-row';
 import { AddSupplierModal } from './add-supplier-modal';
@@ -17,6 +18,7 @@ import {
   sendDomainEmails,
   getSpecSuggestions,
   type DomainSectionData,
+  type SpecSource,
 } from './actions';
 
 type DomainSectionProps = {
@@ -27,10 +29,12 @@ type DomainSectionProps = {
 
 export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps) {
   const router = useRouter();
-  const { domain, config, approved_suppliers, available_non_approved } = data;
+  const { domain, config, ai_source_text, approved_suppliers, available_non_approved } = data;
+  const specInputId = `spec-${domain}`;
 
   const [isOpen, setIsOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showSendConfirm, setShowSendConfirm] = useState(false);
 
   // Config form state
   const [quantityOverride, setQuantityOverride] = useState(
@@ -39,6 +43,11 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
   const [emailSubject, setEmailSubject] = useState(config.email_subject);
   const [emailBodyText, setEmailBodyText] = useState(config.email_body_text);
   const [specValue, setSpecValue] = useState(config.spec_value ?? '');
+  // Seeded from the row, then owned by the client: only here is it known
+  // whether the user has touched the field since the page loaded.
+  const [specSource, setSpecSource] = useState<SpecSource | null>(config.spec_source);
+
+  const isAiFilled = specSource === 'ai';
 
   // Autocomplete state
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -96,14 +105,30 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
     }
   }, [domain]);
 
+  /**
+   * Editing is what clears the AI marking — not saving.
+   *
+   * The distinction is the point: a user who reads an AI-filled value, agrees
+   * with it and hits save has reviewed nothing the system can verify, so the
+   * value stays marked. Touching the field is the only act that proves a human
+   * decided the contents. A value that was never AI-filled stays unmarked
+   * rather than becoming `'user'`, which keeps `'user'` meaning specifically
+   * "a human overrode an AI reading".
+   */
+  function clearAiMarking() {
+    setSpecSource((current) => (current === 'ai' ? 'user' : current));
+  }
+
   function handleSpecChange(value: string) {
     setSpecValue(value);
+    clearAiMarking();
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => fetchSuggestions(value), 300);
   }
 
   function handleSelectSuggestion(value: string) {
     setSpecValue(value);
+    clearAiMarking();
     setShowSuggestions(false);
   }
 
@@ -116,6 +141,7 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
         email_subject: emailSubject,
         email_body_text: emailBodyText,
         spec_value: specValue.trim() || null,
+        spec_source: specSource,
       });
       if (result.success) {
         setConfigSaved(true);
@@ -128,7 +154,37 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
     });
   }
 
-  function handleSend() {
+  /**
+   * The send gate.
+   *
+   * An AI value the user never touched is the one case where a click on send
+   * is not yet consent: the email is the only thing this feature does that
+   * cannot be recalled. Everything else in the trust surface exists to make
+   * the user look before this moment.
+   *
+   * The gate deliberately sits *before* `performSend`, which auto-saves. A
+   * cancelled confirmation must leave the domain exactly as it was found, and
+   * a confirmation raised after the save would already have written.
+   *
+   * This is a client-side check, and so bypassable by anyone driving the
+   * action directly. That is accepted: it is a safeguard against a human not
+   * looking, not a security boundary. The value it protects is one the same
+   * user typed or accepted anyway.
+   */
+  function handleSendClick() {
+    if (isAiFilled) {
+      setShowSendConfirm(true);
+      return;
+    }
+    performSend();
+  }
+
+  function handleConfirmSend() {
+    setShowSendConfirm(false);
+    performSend();
+  }
+
+  function performSend() {
     setError('');
     setSendResult(null);
     // Auto-save config before sending
@@ -138,6 +194,7 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
         email_subject: emailSubject,
         email_body_text: emailBodyText,
         spec_value: specValue.trim() || null,
+        spec_source: specSource,
       });
       const result = await sendDomainEmails(rfqId, domain);
       if (result.success) {
@@ -145,6 +202,30 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
         toast.success(`נשלחו ${result.data.sent} אימיילים בהצלחה`);
         if (result.data.failed.length > 0) {
           toast.error(`שליחה נכשלה ל: ${result.data.failed.join(', ')}`);
+        }
+        /**
+         * A sent email is the review.
+         *
+         * One write settles two things: the domain stops prompting, and the
+         * sparkle goes away — which is what the spec means by the marking
+         * lasting "until the user edits the field **or sends the domain**".
+         * No separate record of "already confirmed" has to exist.
+         *
+         * `sent > 0` rather than an empty `failed`: once any supplier holds
+         * the value, re-prompting on a retry asks the user to re-approve
+         * something they can no longer take back — exactly the reflexive
+         * click-through the confirmation exists to avoid. A send where every
+         * recipient failed changed nothing outward, so the marking stands.
+         */
+        if (isAiFilled && result.data.sent > 0) {
+          clearAiMarking();
+          await saveDomainConfig(rfqId, domain, {
+            quantity_override: quantityOverride ? parseInt(quantityOverride, 10) : null,
+            email_subject: emailSubject,
+            email_body_text: emailBodyText,
+            spec_value: specValue.trim() || null,
+            spec_source: 'user',
+          });
         }
         router.refresh();
       } else {
@@ -160,8 +241,21 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
     router.refresh();
   }
 
+  /**
+   * Unlike the add handlers above, this reports failure instead of throwing.
+   *
+   * SupplierRow calls this inside a transition without awaiting it, so a throw
+   * here becomes an unhandled rejection the user never sees — which is how the
+   * silent-delete bug (#35) stayed invisible: the action reported success, the
+   * row stayed, and nothing anywhere said otherwise.
+   */
   async function handleRemoveSupplier(requestId: string) {
-    await removeSupplierFromRfq(requestId, rfqId);
+    const result = await removeSupplierFromRfq(requestId, rfqId);
+    if (!result.success) {
+      setError(result.error);
+      toast.error(result.error);
+      return;
+    }
     router.refresh();
   }
 
@@ -190,7 +284,17 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
             {DOMAIN_LABELS_HE[domain]}
           </span>
           {specValue && (
-            <span className="text-xs text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 px-2 py-0.5 rounded border border-gray-200 dark:border-gray-600">
+            <span
+              className={`text-xs px-2 py-0.5 rounded border inline-flex items-center gap-1 ${
+                isAiFilled
+                  ? 'text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/40 border-violet-300 dark:border-violet-700'
+                  : 'text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+              }`}
+            >
+              {/* The section is collapsed by default, so for most values this
+                  chip is the only thing the user ever sees. It has to carry
+                  the marking too, or the marking is invisible. */}
+              {isAiFilled && <SparkleIcon className="w-3 h-3 shrink-0" />}
               {specValue}
             </span>
           )}
@@ -219,13 +323,30 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
 
             {/* Spec value with autocomplete */}
             <div className="relative">
+              {/* The label is rendered here rather than via Input's `label`
+                  prop so the AI marker can sit beside it. The marker belongs
+                  next to the label, not inside the field: overlaying the input
+                  would collide with the autocomplete dropdown. */}
+              <div className="flex items-center gap-1.5 mb-1">
+                <label
+                  htmlFor={specInputId}
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  {SPEC_LABELS_HE[domain]}
+                </label>
+                {isAiFilled && <AiMarker sourceText={ai_source_text} />}
+              </div>
               <Input
                 ref={specInputRef}
-                label={SPEC_LABELS_HE[domain]}
+                id={specInputId}
                 value={specValue}
                 onChange={(e) => handleSpecChange(e.target.value)}
                 onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
                 placeholder={`הזן ${SPEC_LABELS_HE[domain]}`}
+                // A ring rather than a border colour: Input already owns its
+                // border class, and two competing Tailwind border utilities
+                // resolve by stylesheet order, not by which is written last.
+                className={isAiFilled ? 'ring-2 ring-violet-400/70 dark:ring-violet-500/60' : ''}
               />
               {showSuggestions && suggestions.length > 0 && (
                 <div
@@ -328,7 +449,7 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
               )}
               <Button
                 type="button"
-                onClick={handleSend}
+                onClick={handleSendClick}
                 disabled={isSending || !canSend}
               >
                 {isSending
@@ -353,6 +474,69 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
         </div>
       )}
 
+      {/* Unreviewed-AI send confirmation */}
+      <Modal
+        open={showSendConfirm}
+        onClose={() => setShowSendConfirm(false)}
+        title="שליחה עם ערך שמולא אוטומטית"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            השדה &quot;{SPEC_LABELS_HE[domain]}&quot; מולא אוטומטית מהשרטוט ולא נערך.
+            אימיילים שנשלחו לספקים אינם ניתנים לביטול.
+          </p>
+
+          {/* The value beside the line it was read from — the same evidence the
+              marker's tooltip shows, put in front of the user at the moment it
+              actually matters, so confirming does not require going back to
+              hunt for it. */}
+          <div className="flex flex-col gap-2 rounded-lg border border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-950/40 p-3">
+            <div className="flex items-center gap-1.5">
+              <SparkleIcon className="w-3.5 h-3.5 shrink-0 text-violet-500 dark:text-violet-400" />
+              <span className="text-xs font-medium text-violet-700 dark:text-violet-300">
+                {SPEC_LABELS_HE[domain]}
+              </span>
+            </div>
+            <span className="font-mono text-sm text-gray-900 dark:text-gray-100 break-words">
+              {specValue}
+            </span>
+            {ai_source_text ? (
+              <div className="border-t border-violet-200 dark:border-violet-800 pt-2">
+                <span className="block text-xs text-gray-500 dark:text-gray-400">
+                  השורה בשרטוט:
+                </span>
+                <span className="mt-0.5 block font-mono text-xs text-gray-700 dark:text-gray-200 break-words">
+                  {ai_source_text}
+                </span>
+              </div>
+            ) : (
+              <div className="border-t border-violet-200 dark:border-violet-800 pt-2">
+                <span className="block text-xs text-gray-500 dark:text-gray-400">
+                  מקור הקריאה אינו זמין עוד
+                </span>
+              </div>
+            )}
+          </div>
+
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            לשלוח ל-{pendingCount} ספקים?
+          </p>
+
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setShowSendConfirm(false)}
+            >
+              ביטול
+            </Button>
+            <Button type="button" onClick={handleConfirmSend}>
+              אישור ושליחה
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       {/* Add supplier modal */}
       <AddSupplierModal
         open={showAddModal}
@@ -363,5 +547,62 @@ export function DomainSection({ rfqId, baseQuantity, data }: DomainSectionProps)
         onCreateNew={handleCreateNew}
       />
     </div>
+  );
+}
+
+function SparkleIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 2l1.9 5.7L19.6 9.6l-5.7 1.9L12 17.2l-1.9-5.7L4.4 9.6l5.7-1.9L12 2z" />
+      <path d="M18.5 14.5l.8 2.4 2.4.8-2.4.8-.8 2.4-.8-2.4-2.4-.8 2.4-.8.8-2.4z" />
+    </svg>
+  );
+}
+
+/**
+ * The AI marking, and the evidence behind it.
+ *
+ * The tooltip shows the line **as printed on the drawing** — the label and the
+ * text the model actually read — not the value echoed back. A value repeated
+ * to the user is not evidence for itself; the point is that the line can be
+ * checked against the sheet without opening the PDF.
+ *
+ * Focusable, and opening on focus as well as hover, because a marker whose
+ * entire content is only reachable with a pointer is not reachable at all for
+ * a keyboard user.
+ */
+function AiMarker({ sourceText }: { sourceText: string | null }) {
+  return (
+    <span
+      className="group relative inline-flex"
+      tabIndex={0}
+      aria-label={
+        sourceText
+          ? `מולא אוטומטית מהשרטוט: ${sourceText}`
+          : 'מולא אוטומטית מהשרטוט'
+      }
+    >
+      <SparkleIcon className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400 cursor-help" />
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute top-full start-0 z-20 mt-1 hidden w-max max-w-xs whitespace-normal rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-start shadow-lg group-hover:block group-focus:block"
+      >
+        <span className="block text-xs font-medium text-violet-600 dark:text-violet-400">
+          מולא אוטומטית מהשרטוט
+        </span>
+        {sourceText ? (
+          <span className="mt-1 block font-mono text-xs text-gray-700 dark:text-gray-200">
+            {sourceText}
+          </span>
+        ) : (
+          // The findings are gone but the value and its marking survive: 008
+          // was rolled back, or the row was deleted. Say so rather than
+          // implying the value has evidence behind it.
+          <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">
+            מקור הקריאה אינו זמין עוד
+          </span>
+        )}
+      </span>
+    </span>
   );
 }
