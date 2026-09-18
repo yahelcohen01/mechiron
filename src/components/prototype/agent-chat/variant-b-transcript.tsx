@@ -8,6 +8,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useLocale } from '@/lib/i18n/locale-context';
+import { AgentMarkdownPROTOTYPE } from './agent-markdown';
 import type { VariantProps } from './types';
 
 export const variantName = 'Work log';
@@ -134,9 +135,10 @@ export function VariantBTranscript({ chat, onClose }: VariantProps) {
                       label={t.agent}
                       marker={<span className="h-2 w-2 rounded-full bg-gray-400" />}
                     >
-                      <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                        {p.text}
-                      </p>
+                      <AgentMarkdownPROTOTYPE
+                        text={p.text}
+                        className="text-sm text-gray-700 dark:text-gray-300"
+                      />
                     </Row>
                   );
 

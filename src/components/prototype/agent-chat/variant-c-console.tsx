@@ -8,6 +8,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useLocale } from '@/lib/i18n/locale-context';
+import { AgentMarkdownPROTOTYPE } from './agent-markdown';
 import type { VariantProps } from './types';
 
 export const variantName = 'Command bar';
@@ -119,12 +120,11 @@ export function VariantCConsole({ chat, onClose }: VariantProps) {
             {current.parts.map((p) => {
               if (p.type === 'text')
                 return (
-                  <p
+                  <AgentMarkdownPROTOTYPE
                     key={p.id}
-                    className="mb-3 text-[15px] leading-relaxed text-gray-900 dark:text-gray-100 whitespace-pre-wrap"
-                  >
-                    {p.text}
-                  </p>
+                    text={p.text}
+                    className="mb-3 text-[15px] text-gray-900 dark:text-gray-100"
+                  />
                 );
 
               if (p.type === 'tool')

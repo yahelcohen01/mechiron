@@ -6,6 +6,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useLocale } from '@/lib/i18n/locale-context';
+import { AgentMarkdownPROTOTYPE } from './agent-markdown';
 import type { Part, VariantProps } from './types';
 
 export const variantName = 'Bubbles';
@@ -157,9 +158,11 @@ export function VariantABubbles({ chat, onClose }: VariantProps) {
                 {m.parts.map((p) => {
                   if (p.type === 'text')
                     return (
-                      <p key={p.id} className="text-sm leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
-                        {p.text}
-                      </p>
+                      <AgentMarkdownPROTOTYPE
+                        key={p.id}
+                        text={p.text}
+                        className="text-sm text-gray-800 dark:text-gray-200"
+                      />
                     );
                   if (p.type === 'tool') return <ToolPill key={p.id} part={p} />;
                   return (
