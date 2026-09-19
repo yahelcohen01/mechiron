@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { DataTable } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/badge';
@@ -18,6 +19,7 @@ type RfqDashboardProps = {
 
 export function RfqDashboard({ rfqs, clients }: RfqDashboardProps) {
   const t = useT();
+  const router = useRouter();
   const [clientFilter, setClientFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
@@ -88,12 +90,23 @@ export function RfqDashboard({ rfqs, clients }: RfqDashboardProps) {
             headers={[t.rfqDashboard.client, t.rfqDashboard.partSn, t.rfqDashboard.revision, t.rfqDashboard.quantity, t.common.status, t.rfqDashboard.date, t.rfqDashboard.sending]}
           >
             {filtered.map((rfq) => (
-              <tr key={rfq.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+              <tr
+                key={rfq.id}
+                className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                onClick={() => router.push(`/rfq/${rfq.id}`)}
+              >
                 <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
                   {/* prefetch disabled: the detail page is expensive to render
                       (generateMetadata + full data fetch); prefetching every row
                       on the dashboard spun up 3-4s of background rendering. */}
-                  <Link href={`/rfq/${rfq.id}`} prefetch={false} className="hover:text-blue-600 dark:hover:text-blue-400">
+                  {/* the whole row navigates; this link stays for keyboard
+                      focus and cmd/middle-click "open in new tab" */}
+                  <Link
+                    href={`/rfq/${rfq.id}`}
+                    prefetch={false}
+                    onClick={(e) => e.stopPropagation()}
+                    className="hover:text-blue-600 dark:hover:text-blue-400"
+                  >
                     {rfq.client_name}
                   </Link>
                 </td>

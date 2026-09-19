@@ -109,7 +109,11 @@ export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
           <div className="hidden md:block">
             <DataTable headers={[t.common.name, t.common.domain, t.clients.contactName, t.common.email, t.common.phone, t.common.actions]}>
               {filtered.map((supplier) => (
-                <tr key={supplier.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                <tr
+                  key={supplier.id}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                  onClick={() => openEdit(supplier)}
+                >
                   <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{supplier.name}</td>
                   <td className="px-4 py-3">
                     <Badge>{t.domains[supplier.domain]}</Badge>
@@ -118,7 +122,7 @@ export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
                   <td className="px-4 py-3 text-gray-600" dir="ltr">{supplier.email}</td>
                   <td className="px-4 py-3 text-gray-600" dir="ltr">{supplier.phone ?? '—'}</td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-2">
+                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => openEdit(supplier)}
                         className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 py-1 px-1"
@@ -141,7 +145,11 @@ export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
           {/* Mobile cards */}
           <div className="md:hidden flex flex-col gap-3">
             {filtered.map((supplier) => (
-              <div key={supplier.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+              <div
+                key={supplier.id}
+                className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 cursor-pointer"
+                onClick={() => openEdit(supplier)}
+              >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-gray-900 dark:text-gray-100">{supplier.name}</span>
@@ -153,7 +161,10 @@ export function SuppliersTable({ suppliers, clients }: SuppliersTableProps) {
                   <span dir="ltr" className="text-start">{supplier.email}</span>
                   {supplier.phone && <span dir="ltr" className="text-start">{supplier.phone}</span>}
                 </div>
-                <div className="flex gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                <div
+                  className="flex gap-2 pt-2 border-t border-gray-100 dark:border-gray-800"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <button
                     onClick={() => openEdit(supplier)}
                     className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 py-1 px-1"
