@@ -1,0 +1,38 @@
+{
+  "projectId": "3bffac4d-e903-474e-a949-d36fb6aa27a7",
+  "shape": "package",
+  "pkg": "mechiron",
+  "globalName": "Mechiron",
+  "srcDir": "src/components/ui",
+  "tsconfig": "tsconfig.json",
+  "cssEntry": ".design-sync/ds-tailwind.css",
+  "extraFonts": [
+    ".design-sync/fonts/heebo.css"
+  ],
+  "overrides": {
+    "Modal": {
+      "cardMode": "column"
+    },
+    "DataTable": {
+      "cardMode": "column"
+    },
+    "SkeletonTable": {
+      "cardMode": "column"
+    }
+  },
+  "dtsPropsFor": {
+    "Button": "/** Visual role. @default 'primary' */\n  variant?: 'primary' | 'secondary' | 'danger';\n  /** @default 'md' */\n  size?: 'sm' | 'md' | 'lg';\n  children?: React.ReactNode;\n  disabled?: boolean;\n  type?: 'button' | 'submit' | 'reset';\n  onClick?: React.MouseEventHandler<HTMLButtonElement>;\n  className?: string;",
+    "Badge": "/** Colour role. @default 'gray' */\n  variant?: 'gray' | 'blue' | 'green';\n  children: React.ReactNode;",
+    "StatusBadge": "/** RFQ status. Picks both the colour and the localised label. */\n  status: 'draft' | 'in_progress' | 'completed';",
+    "DataTable": "/** Column headings, in visual order. */\n  headers: string[];\n  /** The <tr> rows. Style cells with `px-4 py-3`. */\n  children: React.ReactNode;\n  /** Rendered instead of the table when isEmpty is true. */\n  emptyState?: React.ReactNode;\n  isEmpty?: boolean;",
+    "EmptyState": "title: string;\n  description?: string;\n  /** Usually a <Button>. */\n  action?: React.ReactNode;",
+    "Input": "/** Renders a <label> bound to the input. */\n  label?: string;\n  /** Red border + message below. */\n  error?: string;\n  placeholder?: string;\n  type?: string;\n  value?: string | number;\n  defaultValue?: string | number;\n  disabled?: boolean;\n  onChange?: React.ChangeEventHandler<HTMLInputElement>;\n  className?: string;",
+    "Select": "label?: string;\n  error?: string;\n  /** Required. Rendered as <option>s. */\n  options: { value: string; label: string }[];\n  /** Disabled first option shown when value is ''. */\n  placeholder?: string;\n  value?: string;\n  defaultValue?: string;\n  disabled?: boolean;\n  onChange?: React.ChangeEventHandler<HTMLSelectElement>;\n  className?: string;",
+    "Textarea": "label?: string;\n  error?: string;\n  placeholder?: string;\n  /** @default 3 */\n  rows?: number;\n  value?: string;\n  defaultValue?: string;\n  disabled?: boolean;\n  onChange?: React.ChangeEventHandler<HTMLTextAreaElement>;\n  className?: string;",
+    "Modal": "/** Renders nothing when false. */\n  open: boolean;\n  /** Fired by the backdrop click and the Escape key. */\n  onClose: () => void;\n  title: string;\n  children: React.ReactNode;",
+    "Skeleton": "/** Carries no size of its own — set height/width here, e.g. 'h-4 w-full'. */\n  className?: string;",
+    "SkeletonRow": "/** Number of <td> cells. @default 5 */\n  cols?: number;",
+    "SkeletonTable": "/** @default 5 */\n  rows?: number;\n  /** @default 5 */\n  cols?: number;"
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}
