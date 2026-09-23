@@ -1,0 +1,45 @@
+/* Design-system stylesheet entry.
+ *
+ * The app itself has no static stylesheet: globals.css is two lines and
+ * Tailwind v4 generates the utilities at build time, with Heebo applied
+ * separately via next/font on <html>. Rendered designs get only this
+ * compiled sheet, so it has to carry both.
+ *
+ * Compile with:
+ *   node .ds-sync/node_modules/@tailwindcss/cli/dist/index.mjs \
+ *     -i .design-sync/ds-entry.css -o .design-sync/ds-tailwind.css
+ */
+@import "tailwindcss";
+
+/* mirrors src/app/globals.css */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* scan the app's source so every utility the components use is emitted,
+   plus the authored previews (their classes must compile too) */
+@source "../src";
+@source "../.design-sync/previews";
+
+/* Tailwind only emits utilities it has SEEN in scanned source. Designs built
+   in claude.ai/design are new code this sheet never scanned, so without a
+   safelist the agent's own layout classes would resolve to nothing. This
+   force-generates the vocabulary documented in conventions.md. */
+@source inline("{hover:,focus:,dark:,dark:hover:,}{bg,text,border,ring,divide}-{white,black,gray,slate,blue,red,green,amber,yellow,indigo,purple,pink,teal,emerald,orange}-{50,100,200,300,400,500,600,700,800,900,950}");
+@source inline("{sm:,md:,lg:,}{p,px,py,ps,pe,pt,pb,m,mx,my,ms,me,mt,mb,gap,gap-x,gap-y}-{0,0.5,1,1.5,2,2.5,3,3.5,4,5,6,8,10,12,16,20,24}");
+@source inline("{sm:,md:,lg:,}{w,h,min-w,min-h,max-w,size}-{0,1,2,3,4,5,6,8,10,12,16,20,24,32,40,48,64,full,screen,fit,auto}");
+@source inline("{sm:,md:,lg:,}{flex,grid,block,inline-block,inline-flex,hidden,flex-col,flex-row,flex-wrap,items-start,items-center,items-end,justify-start,justify-center,justify-end,justify-between,flex-1,shrink-0,grow}");
+@source inline("{sm:,md:,lg:,}grid-cols-{1,2,3,4,5,6,12}");
+@source inline("{sm:,md:,lg:,}col-span-{1,2,3,4,5,6,full}");
+@source inline("{dark:,}text-{xs,sm,base,lg,xl,2xl,3xl,4xl}");
+@source inline("font-{normal,medium,semibold,bold}");
+@source inline("text-{start,center,end,left,right}");
+@source inline("{rounded,rounded-sm,rounded-md,rounded-lg,rounded-xl,rounded-2xl,rounded-full}");
+@source inline("{shadow-sm,shadow,shadow-md,shadow-lg,shadow-xl,shadow-none}");
+@source inline("{border,border-0,border-2,border-t,border-b,border-s,border-e,border-y,border-x}");
+@source inline("{relative,absolute,fixed,sticky,inset-0,overflow-hidden,overflow-x-auto,overflow-y-auto,truncate,whitespace-nowrap,cursor-pointer,transition-colors,animate-pulse,space-y-2,space-y-4,divide-y}");
+
+/* Heebo is the app's brand font (applied by next/font at runtime there).
+   The @font-face rules ship via cfg.extraFonts → .design-sync/fonts/heebo.css. */
+@theme {
+  --font-sans: "Heebo", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
