@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Gitignored local working dirs. ESLint doesn't read .gitignore, so
+    // without these a local `npm run lint` reports thousands of problems in
+    // generated or third-party code that is never committed.
+    "ds-bundle/**",
+    ".ds-sync/**",
+    "prototypes/**",
   ]),
 ]);
 
